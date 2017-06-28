@@ -9,5 +9,7 @@ setup(
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
     install_requires=[
         'flask',
+        'pymongo',
+        'pyyaml',
     ],
 )

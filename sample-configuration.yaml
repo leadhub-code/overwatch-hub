@@ -1,0 +1,4 @@
+overwatch_hub:
+    mongo:
+        uri: mongodb://127.0.0.1:27017
+        db_name: dev_overwatch_hub
