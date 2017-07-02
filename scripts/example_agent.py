@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
 import argparse
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import os
+from random import random
 import requests
 import socket
 import sys
@@ -35,6 +36,20 @@ default_values = {
     },
 }
 
+default_checks = [
+    {
+        'key': 'random_check',
+        'status': 'red' if random() < .1 else 'green',
+    },
+]
+
+default_expire_checks = [
+    {
+        'key': 'watchdog',
+        'deadline': (datetime.utcnow() + timedelta(minutes=1)).isoformat(),
+    },
+]
+
 
 def main():
     p = argparse.ArgumentParser()
@@ -43,6 +58,8 @@ def main():
     p.add_argument('--series', default=default_series_id)
     p.add_argument('--tags', default=json.dumps(default_tags))
     p.add_argument('--values', default=json.dumps(default_values))
+    p.add_argument('--checks', default=json.dumps(default_checks))
+    p.add_argument('--expire', default=json.dumps(default_expire_checks), help='expire checks')
     args = p.parse_args()
     report_url = args.url
     state = {
@@ -51,6 +68,8 @@ def main():
         'date': datetime.utcnow().isoformat(),
         'tags': json.loads(args.tags),
         'values': json.loads(args.values),
+        'checks': json.loads(args.checks),
+        'expire_checks': json.loads(args.expire),
     }
     try:
         r = requests.post(report_url, json=state)
