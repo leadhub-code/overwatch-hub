@@ -4,7 +4,7 @@ import pymongo
 from pymongo import ASCENDING as ASC
 from pymongo.uri_parser import parse_uri
 
-from .util import connect_to_mongodb
+from ..util import connect_to_mongodb
 
 
 assert pymongo.version > '3.2'

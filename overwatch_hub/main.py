@@ -1,3 +1,10 @@
+'''
+This module contains all entry points to the overwatch_hub:
+
+- WSGI app
+- worker main function
+'''
+
 from flask import Flask, g
 import os
 from pathlib import Path
@@ -8,6 +15,9 @@ from .model import model_from_conf
 
 
 def get_app(cfg_path):
+    '''
+    Get WSGI (Flask) app
+    '''
     cfg_path = Path(cfg_path).resolve()
     cfg_dir = cfg_path.parent
     with cfg_path.open() as f:
@@ -20,6 +30,9 @@ def get_app(cfg_path):
 
 
 def _setup_app(app, model):
+    '''
+    Helper function for get_app
+    '''
     app.register_blueprint(bp_api)
 
     @app.before_request
