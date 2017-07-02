@@ -201,7 +201,7 @@ def export_expire_checks(expire_checks):
 def export_expire_check(ch):
     return {
         'key': ch['key'],
-        'timeout': ch['timeout'].isoformat() + 'Z',
+        'deadline': ch['deadline'].isoformat() + 'Z',
     }
 
 
@@ -272,7 +272,7 @@ def preprocess_state_expire_checks(data):
                 raise Exception('Check key must be str: {!r}'.format(row))
             expire_checks.append({
                 'key': row['key'],
-                'timeout': parse_date(row['timeout']),
+                'deadline': parse_date(row['deadline']),
             })
     else:
         raise Exception('State expire_checks must be list: {!r}'.format(data))

@@ -271,7 +271,7 @@ def test_accept_state_with_expire_check(db, model):
             'expire_checks': [
                 {
                     'key': 'ch1',
-                    'timeout': (now + timedelta(hours=1)).isoformat(),
+                    'deadline': (now + timedelta(hours=1)).isoformat(),
                 },
             ]
         },
@@ -294,8 +294,8 @@ def test_accept_state_with_expire_check(db, model):
                 checks: []
                 date: 2017-07-01 12:00:00
                 expire_checks:
-                -   key: ch1
-                    timeout: 2017-07-01 13:00:00
+                -   deadline: 2017-07-01 13:00:00
+                    key: ch1
                 remote_addr: 127.0.0.1
                 tags:
                 - tk1=tv1
@@ -309,8 +309,8 @@ def test_accept_state_with_expire_check(db, model):
                 checks: []
                 date: 2017-07-01 12:00:00
                 expire_checks:
-                -   key: ch1
-                    timeout: 2017-07-01 13:00:00
+                -   deadline: 2017-07-01 13:00:00
+                    key: ch1
                 remote_addr: 127.0.0.1
                 series_id: oid001
                 tags:
@@ -328,7 +328,7 @@ def test_accept_state_with_expire_check(db, model):
          'tags': [{'key': 'tk1', 'value': 'tv1'}],
          'values': [{'key': 'vk1', 'value': 'vv1'}],
          'checks': [],
-         'expire_checks': [{'key': 'ch1', 'timeout': '2017-07-01T13:00:00Z'}]}]
+         'expire_checks': [{'key': 'ch1', 'deadline': '2017-07-01T13:00:00Z'}]}]
 
 
 def strip_oids(obj):
