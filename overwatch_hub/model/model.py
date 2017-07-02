@@ -155,7 +155,15 @@ def parse_date(dt):
         return dt
     if not isinstance(dt, str):
         raise Exception('date must be datetime or str: {!r}'.format(dt))
-    return datetime.strptime(dt, '%Y-%m-%dT%H:%M:%S')
+    try:
+        return datetime.strptime(dt, '%Y-%m-%dT%H:%M:%S')
+    except ValueError:
+        pass
+    try:
+        return datetime.strptime(dt, '%Y-%m-%dT%H:%M:%S.%f')
+    except ValueError:
+        pass
+    raise Exception('Unknown date format: {!r}'.format(dt))
 
 
 def optional(d):

@@ -17,7 +17,7 @@ def report():
     if not data:
         raise Exception('No data')
     pprint({'report data': data})
-    g.model.store_state(data, request.remote_addr)
+    g.model.accept_state(data, request.remote_addr)
     return jsonify({"ok": True})
 
 
