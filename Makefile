@@ -2,6 +2,9 @@ python3=python3
 venv_dir=local/venv
 conf_path=sample-configuration.yaml
 
+check: $(venv_dir)/test-packages-installed
+	$(venv_dir)/bin/pytest -vv --tb=native $(pytest_args) tests
+
 run: $(venv_dir)/packages-installed
 	env \
 		OVERWATCH_HUB_CONF=$(conf_path) \
@@ -16,6 +19,10 @@ run-mongo:
 
 $(venv_dir)/packages-installed: setup.py
 	test -d $(venv_dir) || $(python3) -m venv $(venv_dir)
-	$(venv_dir)/bin/pip install pip wheel
+	$(venv_dir)/bin/pip install -U pip wheel
 	$(venv_dir)/bin/pip install -e .
+	touch $@
+
+$(venv_dir)/test-packages-installed: $(venv_dir)/packages-installed requirements-tests.txt
+	$(venv_dir)/bin/pip install -r requirements-tests.txt
 	touch $@

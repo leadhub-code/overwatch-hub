@@ -1,0 +1,2 @@
+pytest
+git+https://github.com/leadhub-code/instant-mongo@v1.0.1#egg=instant-mongo==1.0.1

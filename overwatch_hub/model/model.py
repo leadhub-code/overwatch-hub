@@ -48,6 +48,9 @@ class Model:
         return '<{cls} {s._db!r}>'.format(cls=self.__class__.__name__, s=self)
 
     def store_state(self, agent_token, series_external_id, date, tags, values, remote_addr):
+        '''
+        Doesn't return anything
+        '''
         assert isinstance(date, datetime)
         if series_external_id is not None and not isinstance(series_external_id, str):
             raise Exception('series_external_id must be None or str')
