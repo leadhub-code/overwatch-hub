@@ -8,7 +8,7 @@ run: $(venv_dir)/packages-installed
 		PYTHONDONTWRITEBYTECODE=1 \
 		FLASK_APP=overwatch_hub:app \
 		FLASK_DEBUG=1 \
-		$(venv_dir)/bin/flask run
+		$(venv_dir)/bin/flask run --host=0.0.0.0
 
 run-mongo:
 	mkdir -p local/mongo-data
