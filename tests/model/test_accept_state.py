@@ -1,6 +1,6 @@
 from bson import ObjectId
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from pprint import pprint
 import re
 from textwrap import dedent
@@ -8,6 +8,9 @@ import yaml
 
 
 def test_accept_state_simple(db, model):
+    '''
+    Simple state report with just tags and values - no checks
+    '''
     now = datetime.strptime('2017-07-01 12:00', '%Y-%m-%d %H:%M')
     model.accept_state(
         {
@@ -86,7 +89,246 @@ def test_accept_state_simple(db, model):
                   {'key': 'tk2', 'value': 'tv2'}],
          'values': [{'key': 'vk1', 'value': 'vv1'},
                     {'key': 'vk2.vk21', 'value': 'vv21'},
-                    {'key': 'vk2.vk22', 'value': 'vv22'}]}]
+                    {'key': 'vk2.vk22', 'value': 'vv22'}],
+         'checks': [],
+         'expire_checks': []}]
+
+
+def test_accept_state_with_green_check(db, model):
+    '''
+    Simple state report with one green check
+    '''
+    now = datetime.strptime('2017-07-01 12:00', '%Y-%m-%d %H:%M')
+    model.accept_state(
+        {
+            'agent_token': 'at1',
+            'series': 's1',
+            'date': now.isoformat(),
+            'tags': {
+                'tk1': 'tv1',
+            },
+            'values': {
+                'vk1': 'vv1',
+            },
+            'checks': [
+                {
+                    'key': 'ch1',
+                    'status': 'green',
+                },
+            ]
+        },
+        remote_addr='127.0.0.1')
+
+    assert yaml_dump(strip_oids(dump_db(db))) == dedent('''\
+        agents:
+            oid000:
+                _id: oid000
+                token: at1
+        series:
+            oid001:
+                _id: oid001
+                agent_id: oid000
+                name: s1
+        states.current:
+            oid001:
+                _id: oid001
+                agent_id: oid000
+                checks:
+                -   key: ch1
+                    status: green
+                date: 2017-07-01 12:00:00
+                expire_checks: []
+                remote_addr: 127.0.0.1
+                tags:
+                - tk1=tv1
+                values:
+                -   key: vk1
+                    value: vv1
+        states.history:
+            oid002:
+                _id: oid002
+                agent_id: oid000
+                checks:
+                -   key: ch1
+                    status: green
+                date: 2017-07-01 12:00:00
+                expire_checks: []
+                remote_addr: 127.0.0.1
+                series_id: oid001
+                tags:
+                - tk1=tv1
+                values:
+                -   key: vk1
+                    value: vv1
+    ''')
+
+    assert strip_oids(model.get_current_states()) == [
+        {'agent': {'internal_id': 'oid000|str'},
+         'series': {'internal_id': 'oid001|str', 'name': 's1'},
+         'date': '2017-07-01T12:00:00Z',
+         'remote_addr': '127.0.0.1',
+         'tags': [{'key': 'tk1', 'value': 'tv1'}],
+         'values': [{'key': 'vk1', 'value': 'vv1'}],
+         'checks': [{'key': 'ch1', 'status': 'green'}],
+         'expire_checks': []}]
+
+
+def test_accept_state_with_red_check(db, model):
+    '''
+    Simple state report with one red check
+    '''
+    now = datetime.strptime('2017-07-01 12:00', '%Y-%m-%d %H:%M')
+    model.accept_state(
+        {
+            'agent_token': 'at1',
+            'series': 's1',
+            'date': now.isoformat(),
+            'tags': {
+                'tk1': 'tv1',
+            },
+            'values': {
+                'vk1': 'vv1',
+            },
+            'checks': [
+                {
+                    'key': 'ch1',
+                    'status': 'red',
+                },
+            ]
+        },
+        remote_addr='127.0.0.1')
+
+    assert yaml_dump(strip_oids(dump_db(db))) == dedent('''\
+        agents:
+            oid000:
+                _id: oid000
+                token: at1
+        series:
+            oid001:
+                _id: oid001
+                agent_id: oid000
+                name: s1
+        states.current:
+            oid001:
+                _id: oid001
+                agent_id: oid000
+                checks:
+                -   key: ch1
+                    status: red
+                date: 2017-07-01 12:00:00
+                expire_checks: []
+                remote_addr: 127.0.0.1
+                tags:
+                - tk1=tv1
+                values:
+                -   key: vk1
+                    value: vv1
+        states.history:
+            oid002:
+                _id: oid002
+                agent_id: oid000
+                checks:
+                -   key: ch1
+                    status: red
+                date: 2017-07-01 12:00:00
+                expire_checks: []
+                remote_addr: 127.0.0.1
+                series_id: oid001
+                tags:
+                - tk1=tv1
+                values:
+                -   key: vk1
+                    value: vv1
+    ''')
+
+    assert strip_oids(model.get_current_states()) == [
+        {'agent': {'internal_id': 'oid000|str'},
+         'series': {'internal_id': 'oid001|str', 'name': 's1'},
+         'date': '2017-07-01T12:00:00Z',
+         'remote_addr': '127.0.0.1',
+         'tags': [{'key': 'tk1', 'value': 'tv1'}],
+         'values': [{'key': 'vk1', 'value': 'vv1'}],
+         'checks': [{'key': 'ch1', 'status': 'red'}],
+         'expire_checks': []}]
+
+
+def test_accept_state_with_expire_check(db, model):
+    '''
+    Simple state report with one red check
+    '''
+    now = datetime.strptime('2017-07-01 12:00', '%Y-%m-%d %H:%M')
+    model.accept_state(
+        {
+            'agent_token': 'at1',
+            'series': 's1',
+            'date': now.isoformat(),
+            'tags': {
+                'tk1': 'tv1',
+            },
+            'values': {
+                'vk1': 'vv1',
+            },
+            'expire_checks': [
+                {
+                    'key': 'ch1',
+                    'timeout': (now + timedelta(hours=1)).isoformat(),
+                },
+            ]
+        },
+        remote_addr='127.0.0.1')
+
+    assert yaml_dump(strip_oids(dump_db(db))) == dedent('''\
+        agents:
+            oid000:
+                _id: oid000
+                token: at1
+        series:
+            oid001:
+                _id: oid001
+                agent_id: oid000
+                name: s1
+        states.current:
+            oid001:
+                _id: oid001
+                agent_id: oid000
+                checks: []
+                date: 2017-07-01 12:00:00
+                expire_checks:
+                -   key: ch1
+                    timeout: 2017-07-01 13:00:00
+                remote_addr: 127.0.0.1
+                tags:
+                - tk1=tv1
+                values:
+                -   key: vk1
+                    value: vv1
+        states.history:
+            oid002:
+                _id: oid002
+                agent_id: oid000
+                checks: []
+                date: 2017-07-01 12:00:00
+                expire_checks:
+                -   key: ch1
+                    timeout: 2017-07-01 13:00:00
+                remote_addr: 127.0.0.1
+                series_id: oid001
+                tags:
+                - tk1=tv1
+                values:
+                -   key: vk1
+                    value: vv1
+    ''')
+
+    assert strip_oids(model.get_current_states()) == [
+        {'agent': {'internal_id': 'oid000|str'},
+         'series': {'internal_id': 'oid001|str', 'name': 's1'},
+         'date': '2017-07-01T12:00:00Z',
+         'remote_addr': '127.0.0.1',
+         'tags': [{'key': 'tk1', 'value': 'tv1'}],
+         'values': [{'key': 'vk1', 'value': 'vv1'}],
+         'checks': [],
+         'expire_checks': [{'key': 'ch1', 'timeout': '2017-07-01T13:00:00Z'}]}]
 
 
 def strip_oids(obj):

@@ -65,6 +65,8 @@ class Model:
                 'date': cs_doc['date'].isoformat() + 'Z',
                 'tags': export_tags(cs_doc['tags']),
                 'values': cs_doc['values'],
+                'checks': (cs_doc['checks']),
+                'expire_checks': export_expire_checks(cs_doc['expire_checks']),
                 'remote_addr': cs_doc['remote_addr'],
             })
         return current_states
@@ -75,7 +77,7 @@ class Model:
         '''
         agent_token = payload['agent_token']
         series_name = payload.get('series') or None
-        date = preprocess_date(payload['date'])
+        date = parse_date(payload['date'])
         tags = preprocess_state_tags(payload['tags'])
         values = preprocess_state_values(payload.get('values'))
         checks = preprocess_state_checks(payload.get('checks'))
@@ -148,7 +150,7 @@ class Model:
         return series_id
 
 
-def preprocess_date(dt):
+def parse_date(dt):
     if isinstance(dt, datetime):
         return dt
     if not isinstance(dt, str):
@@ -182,6 +184,17 @@ def export_tags(tags):
             'value': v,
         })
     return exp
+
+
+def export_expire_checks(expire_checks):
+    return [export_expire_check(ch) for ch in expire_checks]
+
+
+def export_expire_check(ch):
+    return {
+        'key': ch['key'],
+        'timeout': ch['timeout'].isoformat() + 'Z',
+    }
 
 
 def preprocess_state_values(data):
@@ -222,11 +235,37 @@ def _preprocess_values_object(values, data, path=''):
 def preprocess_state_checks(data):
     if not data:
         return []
-    assert 0, data
-
+    checks = []
+    allowed_statuses = ['green', 'yellow', 'red']
+    if isinstance(data, list):
+        for row in data:
+            if not isinstance(row['key'], str):
+                raise Exception('Check key must be str: {!r}'.format(row))
+            if not isinstance(row['status'], str):
+                raise Exception('Check status must be str: {!r}'.format(row))
+            if row['status'] not in allowed_statuses:
+                raise Exception('Check status must be one of {!r}: {!r}'.format(allowed_statuses, row))
+            checks.append({
+                'key': row['key'],
+                'status': row['status'],
+            })
+    else:
+        raise Exception('State checks must be list: {!r}'.format(data))
+    return checks
 
 
 def preprocess_state_expire_checks(data):
     if not data:
         return []
-    assert 0, data
+    expire_checks = []
+    if isinstance(data, list):
+        for row in data:
+            if not isinstance(row['key'], str):
+                raise Exception('Check key must be str: {!r}'.format(row))
+            expire_checks.append({
+                'key': row['key'],
+                'timeout': parse_date(row['timeout']),
+            })
+    else:
+        raise Exception('State expire_checks must be list: {!r}'.format(data))
+    return expire_checks
