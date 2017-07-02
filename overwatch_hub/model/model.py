@@ -32,34 +32,62 @@ class Model:
 
     def create_indexes(self):
         self._c_agents.create_index('token', unique=True)
-        self._c_series.create_index([
-            ('agent_id', ASC),
-            ('external_id', ASC),
-        ], unique=True)
+        self._c_series.create_index(
+            [
+                ('agent_id', ASC),
+                ('name', ASC),
+            ],
+            unique=True)
         self._c_current_states.create_index('agent_id')
-        self._c_current_states.create_index('series_id', unique=True)
-        self._c_history_states.create_index([
-            ('agent_id', ASC),
-            ('series_id', ASC),
-            ('date', ASC),
-        ])
+        self._c_history_states.create_index(
+            [
+                ('agent_id', ASC),
+                ('series_id', ASC),
+                ('date', ASC),
+            ])
 
     def __repr__(self):
         return '<{cls} {s._db!r}>'.format(cls=self.__class__.__name__, s=self)
 
-    def store_state(self, agent_token, series_external_id, date, tags, values, remote_addr):
+    def get_current_states(self):
+        current_states = []
+        series_by_id = {doc['_id']: doc for doc in self._c_series.find()}
+        for cs_doc in self._c_current_states.find():
+            cs_series = series_by_id[cs_doc['_id']];
+            current_states.append({
+                'agent': {
+                    'internal_id': str(cs_doc['agent_id']),
+                },
+                'series': {
+                    'internal_id': str(cs_series['_id']),
+                    'name': cs_series['name'],
+                },
+                'date': cs_doc['date'].isoformat() + 'Z',
+                'tags': export_tags(cs_doc['tags']),
+                'values': cs_doc['values'],
+                'remote_addr': cs_doc['remote_addr'],
+            })
+        return current_states
+
+    def accept_state(self, payload, remote_addr):
         '''
         Doesn't return anything
         '''
-        assert isinstance(date, datetime)
-        if series_external_id is not None and not isinstance(series_external_id, str):
-            raise Exception('series_external_id must be None or str')
-        if not isinstance(tags, dict):
-            raise Exception('tags must be dict')
-        if not isinstance(values, dict):
-            raise Exception('values must be dict')
+        agent_token = payload['agent_token']
+        series_name = payload.get('series') or None
+        date = preprocess_date(payload['date'])
+        tags = preprocess_state_tags(payload['tags'])
+        values = preprocess_state_values(payload.get('values'))
+        checks = preprocess_state_checks(payload.get('checks'))
+        expire_checks = preprocess_state_expire_checks(payload.get('expire_checks'))
+
+        if not isinstance(date, datetime):
+            raise Exception('date must be datetime')
+        if series_name is not None and not isinstance(series_name, str):
+            raise Exception('series must be None or str')
+
         agent_id = self._get_or_create_agent(agent_token)
-        series_id = self._get_or_create_series(agent_id, series_external_id)
+        series_id = self._get_or_create_series(agent_id, series_name)
         assert isinstance(agent_id, ObjectId)
         assert isinstance(series_id, ObjectId)
 
@@ -69,23 +97,30 @@ class Model:
             'date': date,
             'tags': tags,
             'values': values,
+            'checks': checks,
+            'expire_checks': expire_checks,
             'remote_addr': remote_addr,
         })
 
-        cs_doc = self._c_current_states.find_one({'series_id': series_id})
+        cs_doc = self._c_current_states.find_one({'_id': series_id})
         if not cs_doc or cs_doc['date'] < date:
-            self._c_current_states.update_one(
+
+            # save also as current state
+            self._c_current_states.replace_one(
                 {
-                    'series_id': series_id,
+                    '_id': series_id,
                 }, {
-                    '$set': {
-                        'agent_id': agent_id,
-                        'date': date,
-                        'tags': tags,
-                        'values': values,
-                        'remote_addr': remote_addr,
-                    },
-                }, upsert=True)
+                    '_id': series_id,
+                    'agent_id': agent_id,
+                    'date': date,
+                    'tags': tags,
+                    'values': values,
+                    'checks': checks,
+                    'expire_checks': expire_checks,
+                    'remote_addr': remote_addr,
+                },
+                upsert=True)
+
 
     def _get_or_create_agent(self, agent_token):
         doc = self._c_agents.find_one({'token': agent_token})
@@ -98,15 +133,100 @@ class Model:
         })
         return agent_id
 
-    def _get_or_create_series(self, agent_id, series_external_id):
+
+    def _get_or_create_series(self, agent_id, series_name):
         assert isinstance(agent_id, ObjectId)
-        doc = self._c_series.find_one({'agent_id': agent_id, 'external_id': series_external_id})
+        doc = self._c_series.find_one({'agent_id': agent_id, 'name': series_name})
         if doc:
             return doc['_id']
         series_id = ObjectId()
         self._c_series.insert_one({
             '_id': series_id,
             'agent_id': agent_id,
-            'external_id': series_external_id,
+            'name': series_name,
         })
         return series_id
+
+
+def preprocess_date(dt):
+    if isinstance(dt, datetime):
+        return dt
+    if not isinstance(dt, str):
+        raise Exception('date must be datetime or str: {!r}'.format(dt))
+    return datetime.strptime(dt, '%Y-%m-%dT%H:%M:%S')
+
+
+def optional(d):
+    return {k: v for k, v in d.items() if v}
+
+
+def preprocess_state_tags(data):
+    tags = []
+    if isinstance(data, dict):
+        for k, v in sorted(data.items()):
+            if not isinstance(k, str):
+                raise Exception('Tag keys must be str: {!r}'.format(data))
+            tags.append('{}={}'.format(k, v))
+    else:
+        Exception('State tags must be dict: {!r}'.format(data))
+    return tags
+
+
+def export_tags(tags):
+    exp = []
+    for tag in tags:
+        assert isinstance(tag, str)
+        k, v = tag.split('=', 1)
+        exp.append({
+            'key': k,
+            'value': v,
+        })
+    return exp
+
+
+def preprocess_state_values(data):
+    values = []
+    if isinstance(data, dict):
+        _preprocess_values_object(values, data)
+    elif isinstance(data, list):
+        for row in data:
+            if not isinstance(key, str):
+                raise Exception('key must be str: {!r}'.format(row))
+            values.append({
+                'key': row['key'],
+                'value': row['value'],
+                **optional({
+                    'unit': row.get('unit'),
+                }),
+            })
+    else:
+        raise Exception('State values must be dict or list: {!r}'.format(data))
+    return values
+
+
+def _preprocess_values_object(values, data, path=''):
+    if isinstance(data, dict):
+        for k, v in sorted(data.items()):
+            k = str(k).replace('.', '_')
+            _preprocess_values_object(values, v, path=path + '.' + k)
+    elif isinstance(data, list):
+        for n, v in enumerate(v):
+            _preprocess_values_object(values, v, path=path + '.' + str(n))
+    else:
+        values.append({
+            'key': path.lstrip('.'),
+            'value': data,
+        })
+
+
+def preprocess_state_checks(data):
+    if not data:
+        return []
+    assert 0, data
+
+
+
+def preprocess_state_expire_checks(data):
+    if not data:
+        return []
+    assert 0, data
