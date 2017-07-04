@@ -14,11 +14,11 @@ from .api import bp as bp_api
 from .model import model_from_conf
 
 
-def get_app(cfg_path):
+def get_app(cfg_path=None):
     '''
     Get WSGI (Flask) app
     '''
-    cfg_path = Path(cfg_path).resolve()
+    cfg_path = Path(cfg_path or os.environ['OVERWATCH_HUB_CONF']).resolve()
     cfg_dir = cfg_path.parent
     with cfg_path.open() as f:
         cfg = yaml.safe_load(f)['overwatch_hub']
@@ -48,5 +48,5 @@ def app(*args):
     '''
     global _app
     if _app is None:
-        _app = get_app(os.environ['OVERWATCH_HUB_CONF'])
+        _app = get_app()
     return _app(*args)
