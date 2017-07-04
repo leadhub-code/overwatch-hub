@@ -1,0 +1,6 @@
+.git
+local
+.cache
+__pycache__
+*.egg-info
+Makefile
