@@ -17,6 +17,7 @@ def connect_to_mongodb(mongo_uri, ssl_ca_cert):
             connectTimeoutMS=3 * 1000,
             serverSelectionTimeoutMS=5 * 1000,
             w='majority',
+            appname=__name__.split('.')[0],
             **mc_kwargs)
     except Exception as e:
         raise Exception('Failed to connect to {!r}: {!r}'.format(mongo_uri_safe, e)) from e
