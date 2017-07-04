@@ -25,6 +25,7 @@ def model_from_conf(cfg, cfg_dir):
 class Model:
 
     def __init__(self, db):
+        self._db = db
         self._c_agents = db['agents']
         self._c_series = db['series']
         self._c_history_states = db['states.history']
@@ -45,6 +46,12 @@ class Model:
                 ('series_id', ASC),
                 ('date', ASC),
             ])
+
+    def close(self):
+        '''
+        Disconnect from MongoDB.
+        '''
+        self._db.client.close()
 
     def __repr__(self):
         return '<{cls} {s._db!r}>'.format(cls=self.__class__.__name__, s=self)

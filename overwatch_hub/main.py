@@ -22,22 +22,42 @@ def get_app(cfg_path=None):
     cfg_dir = cfg_path.parent
     with cfg_path.open() as f:
         cfg = yaml.safe_load(f)['overwatch_hub']
-    model = model_from_conf(cfg, cfg_dir)
-    model.create_indexes()
+    model_factory = lambda: model_from_conf(cfg, cfg_dir)
+    _init_model(model_factory)
     app = Flask(__name__)
-    _setup_app(app, model)
+    _setup_app(app, model_factory)
     return app
 
 
-def _setup_app(app, model):
+def _init_model(model_factory):
+    '''
+    Create indexes, maybe perform migrations...
+    '''
+    model = model_factory()
+    model.create_indexes()
+    model.close()
+
+
+def _setup_app(app, model_factory):
     '''
     Helper function for get_app
     '''
     app.register_blueprint(bp_api)
 
+    # Why this lazy model creation?
+    # Because this code may run in preload process and we do not want to instantiate Model here.
+    # Model object must be created later when the app is running in its worker process.
+    model = None
+
+    def get_model():
+        nonlocal model
+        if model is None:
+            model = model_factory()
+        return model
+
     @app.before_request
     def before():
-        g.model = model
+        g.model = get_model()
 
 
 _app = None
