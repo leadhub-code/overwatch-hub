@@ -17,6 +17,19 @@ def report():
     if not data:
         raise Exception('No data')
     pprint({'report data': data})
+
+    agent = g.model.agents.get_or_create(
+        agent_id=data['agent_id'],
+        agent_token=data['agent_token'])
+
+
+
+
+
+
+
+
+
     g.model.accept_state(data, request.remote_addr)
     return jsonify({"ok": True})
 

@@ -12,6 +12,7 @@ import sys
 
 requests.adapters.DEFAULT_RETRIES = 1
 
+default_agent_id = 'example_agent_1'
 default_report_url = 'http://127.0.0.1:5000/report'
 default_agent_token = 'examplesecrettoken'
 default_series_id = None
@@ -20,6 +21,8 @@ default_tags = {
     'agent': 'example_agent',
     'host': socket.getfqdn(),
 }
+
+random_value = random()
 
 default_values = {
     'load': {
@@ -34,12 +37,16 @@ default_values = {
         'version':  os.uname().version,
         'machine':  os.uname().machine,
     },
+    'random_value': random_value,
 }
 
 default_checks = [
     {
-        'key': 'random_check',
-        'status': 'red' if random() < .1 else 'green',
+        'key': 'random_value',
+        'status': 'red' if random_value < .1 else 'green',
+    }, {
+        'key': 'load',
+        'status': 'red' if os.getloadavg()[0] > 1 else 'green',
     },
 ]
 
@@ -54,6 +61,7 @@ default_expire_checks = [
 def main():
     p = argparse.ArgumentParser()
     p.add_argument('--url', default=default_report_url, help='report URL')
+    p.add_argument('--agent-id', default=default_agent_id,
     p.add_argument('--token', default=default_agent_token)
     p.add_argument('--series', default=default_series_id)
     p.add_argument('--tags', default=json.dumps(default_tags))
@@ -63,13 +71,17 @@ def main():
     args = p.parse_args()
     report_url = args.url
     state = {
+        'report': 'agent_state',
+        'agent_id': args.agent_id,
         'agent_token': args.token,
-        'series_id': args.series,
-        'date': datetime.utcnow().isoformat(),
-        'tags': json.loads(args.tags),
-        'values': json.loads(args.values),
-        'checks': json.loads(args.checks),
-        'expire_checks': json.loads(args.expire),
+        'states': [{
+            'series_id': args.series,
+            'date': datetime.utcnow().isoformat(),
+            'tags': json.loads(args.tags),
+            'values': json.loads(args.values),
+            'checks': json.loads(args.checks),
+            'expire_checks': json.loads(args.expire),
+        }],
     }
     try:
         r = requests.post(report_url, json=state)
