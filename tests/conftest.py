@@ -1,9 +1,16 @@
 import logging
+import multiprocessing
 from pathlib import Path
 from pytest import fixture
 import sys
 from instant_mongo import InstantMongoDB
 from instant_mongo.port_guard import PortGuard
+
+
+assert multiprocessing.get_start_method(allow_none=True) is None
+
+# don't mix processes and threads :)
+multiprocessing.set_start_method('forkserver')
 
 
 logging.basicConfig(
@@ -17,6 +24,11 @@ logging.getLogger('instant_mongo').setLevel(logging.INFO)
 @fixture
 def tmp_dir(tmpdir):
     return Path(str(tmpdir))
+
+
+@fixture
+def project_dir():
+    return Path(__file__).resolve().parent.parent
 
 
 @fixture
