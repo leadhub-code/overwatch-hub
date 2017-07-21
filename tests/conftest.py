@@ -21,6 +21,11 @@ logging.basicConfig(
 logging.getLogger('instant_mongo').setLevel(logging.INFO)
 
 
+def pytest_collection_modifyitems(config, items):
+    items.sort(key=lambda tst: (10 if tst.get_marker('slow') else 0))
+
+
+
 @fixture
 def tmp_dir(tmpdir):
     return Path(str(tmpdir))

@@ -1,8 +1,9 @@
 from collections import namedtuple
 import multiprocessing
-from pytest import fixture
+from pytest import fixture, mark
 import requests
 import subprocess
+from time import monotonic as monotime
 from time import sleep
 import yaml
 
@@ -14,6 +15,7 @@ def app_process(tmp_dir, db, db_port, get_free_tcp_port):
     app_port = get_free_tcp_port()
     cfg_path = tmp_dir / 'hub-configuration.yaml'
     _write_app_conf(cfg_path, db_port, db.name)
+    t0 = monotime()
 
     started = multiprocessing.Event()
     p = multiprocessing.Process(name='app', target=_run_app, args=(cfg_path, app_port, started))
@@ -25,9 +27,11 @@ def app_process(tmp_dir, db, db_port, get_free_tcp_port):
         assert p.is_alive()
 
         r = requests.get('http://127.0.0.1:{port}/'.format(port=app_port))
-        print(r.status_code, r.content[:1000])
+        print('check response:', r.status_code, r.content[:1000])
         assert r.status_code == 200
         assert p.is_alive()
+
+        print('Started in {:.3f} s'.format(monotime() - t0))
 
         yield _AppProcess(p, app_port)
 
@@ -60,6 +64,7 @@ def _write_app_conf(cfg_path, db_port, db_name):
     }))
 
 
+@mark.slow
 def test_run_example_agent(app_process, project_dir):
     agent_path = project_dir / 'scripts/example_agent.py'
     subprocess.check_call(

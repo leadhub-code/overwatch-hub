@@ -61,7 +61,7 @@ default_expire_checks = [
 def main():
     p = argparse.ArgumentParser()
     p.add_argument('--url', default=default_report_url, help='report URL')
-    p.add_argument('--agent-id', default=default_agent_id,
+    p.add_argument('--id', default=default_agent_id)
     p.add_argument('--token', default=default_agent_token)
     p.add_argument('--series', default=default_series_id)
     p.add_argument('--tags', default=json.dumps(default_tags))
@@ -72,7 +72,7 @@ def main():
     report_url = args.url
     state = {
         'report': 'agent_state',
-        'agent_id': args.agent_id,
+        'agent_id': args.id,
         'agent_token': args.token,
         'states': [{
             'series_id': args.series,
