@@ -18,6 +18,8 @@ def model_from_conf(cfg, cfg_dir):
             ca_cert_file = cfg_dir / mongo_cfg['ssl']['ca_cert_file']
     client = connect_to_mongodb(mongo_cfg['uri'], ca_cert_file)
     db_name = mongo_cfg.get('db_name') or parse_uri(mongo_cfg['uri'])['database']
+    if not db_name:
+        raise Exception('db_name must be provided in mongo configuration or in mongo URI')
     db = client[db_name]
     return Model(db)
 
