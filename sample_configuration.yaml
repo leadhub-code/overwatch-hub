@@ -1,0 +1,10 @@
+overwatch_hub:
+    report_tokens:
+        - secret_report_token
+    client_tokens:
+        - secret_client_token
+    http_interface:
+        bind_host: localhost
+        bind_port: 8090
+    log:
+        file: local/hub.log
