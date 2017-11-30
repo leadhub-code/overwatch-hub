@@ -4,7 +4,7 @@ overwatch_hub:
     client_tokens:
         - secret_client_token
     http_interface:
-        bind_host: localhost
+        bind_host: 127.0.0.1
         bind_port: 8090
     log:
         file: local/hub.log
