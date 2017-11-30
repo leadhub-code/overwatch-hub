@@ -60,7 +60,10 @@ class Handlers:
         if timestamp_ms > now_ms:
             logger.info('Datapoint timestamp %s > now %s', timestamp_ms, now_ms)
             timestamp_ms = now_ms
-        self.model.add_datapoint(body['label'], timestamp_ms, body['values'])
+        state = body.get('state') or body.get('values')
+        if not state or not isinstance(state, dict):
+            raise Exception('Invalid state data')
+        self.model.add_datapoint(body['label'], timestamp_ms, state)
         return json_response({'ok': True})
 
     async def get_stream_list(self, request):
