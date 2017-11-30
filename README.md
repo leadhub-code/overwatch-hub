@@ -1,6 +1,8 @@
 Overwatch Hub
 =============
 
+[![CircleCI](https://circleci.com/gh/leadhub-code/overwatch-hub/tree/master.svg?style=svg&circle-token=ff4678e69f5252993c2fdfade4bdfd02696a9e9d)](https://circleci.com/gh/leadhub-code/overwatch-hub/tree/master)
+
 This is a standalone HTTP server that:
 
 - accepts reports from agents
