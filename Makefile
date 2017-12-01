@@ -14,3 +14,9 @@ $(venv_dir)/packages-installed: setup.py requirements-tests.txt
 	$(venv_dir)/bin/pip install -e .
 	$(venv_dir)/bin/pip install -r requirements-tests.txt
 	touch $@
+
+docker-build:
+	docker build -t overwatch-hub .
+
+docker-run: docker-build
+	docker run --rm -it -p 8090:8090 overwatch-hub overwatch-hub /overwatch-hub/sample_configuration.yaml
