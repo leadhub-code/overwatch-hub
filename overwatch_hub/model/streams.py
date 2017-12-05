@@ -19,7 +19,7 @@ class Streams:
         self._by_id = {}
 
     def get_or_create_by_label(self, label):
-        sl = serialize_label(label)
+        sl = _serialize_label(label)
         if sl not in self._by_label:
             stream = Stream(label)
             self._by_label[sl] = stream
@@ -41,12 +41,12 @@ class Streams:
         streams = cls()
         for stream_data in data:
             stream = Stream.deserialize(stream_data)
-            streams._by_label[serialize_label(stream.label)] = stream
+            streams._by_label[_serialize_label(stream.label)] = stream
             streams._by_id[stream.id] = stream
         return streams
 
 
-def serialize_label(label):
+def _serialize_label(label):
     assert isinstance(label, dict)
     return tuple(sorted(label.items()))
 
