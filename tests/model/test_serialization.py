@@ -4,11 +4,15 @@ import yaml
 from overwatch_hub.model import Model
 
 
-
+def serialize(obj):
+    data = []
+    obj.serialize(data.append)
+    return data
 
 
 def test_serialize_empty_model():
     m = Model()
+    assert serialize(m) == []
 
 
 def test_serialize_model_with_datapoint():
@@ -29,3 +33,4 @@ def test_serialize_model_with_datapoint():
    ''')
     m = Model()
     m.add_datapoint(**sample_datapoint)
+    assert serialize(m) == []
