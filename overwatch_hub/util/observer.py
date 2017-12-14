@@ -5,7 +5,7 @@ from reprlib import repr as smart_repr
 logger = logging.getLogger(__name__)
 
 
-class Event:
+class ObservableEvent:
     '''
     Known as Publish-subscribe or Observer pattern.
     '''
