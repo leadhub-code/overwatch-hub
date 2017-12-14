@@ -117,6 +117,7 @@ class Stream:
                 alert['end_date'] = now_date
                 self.current_watchdog_alerts_by_path.pop(path)
 
+
     def _ensure_check_alert(self, current_date, path, check):
         alert = self.current_check_alerts_by_path.get(path)
         if alert is None:

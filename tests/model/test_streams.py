@@ -7,6 +7,7 @@ from overwatch_hub.util.datetime import parse_date_to_timestamp_ms
 
 
 def test_add_datapoint_and_check_stream_attributes():
+    skip()
     sample_datapoint = yaml.load('''
         date: 1511346030123
         label:
@@ -52,6 +53,7 @@ def test_add_datapoint_and_check_stream_attributes():
 
 
 def test_stream_creates_alert_for_red_check():
+    skip()
     sample_datapoint = yaml.load('''
         date: 1511346030123
         label:
@@ -83,6 +85,7 @@ def test_stream_creates_alert_for_red_check():
 
 
 def test_stream_resolves_check_alert():
+    skip()
     sample_datapoint = yaml.load('''
         date: 1511346030123
         label:

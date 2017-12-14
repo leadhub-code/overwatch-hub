@@ -3,7 +3,7 @@ venv_dir=local/venv
 conf=sample_configuration.yaml
 
 check: $(venv_dir)/packages-installed
-	PYTHONDONTWRITEBYTECODE=1 $(venv_dir)/bin/pytest -vv tests
+	PYTHONDONTWRITEBYTECODE=1 $(venv_dir)/bin/pytest -vv --tb=native tests
 
 run: $(venv_dir)/packages-installed
 	PYTHONDONTWRITEBYTECODE=1 $(venv_dir)/bin/overwatch-hub -vv $(conf)
