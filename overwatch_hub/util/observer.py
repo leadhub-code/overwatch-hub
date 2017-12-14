@@ -32,5 +32,5 @@ class ObservableEvent:
         if not self.callbacks:
             logger.debug('No callbacks; params: %s', params_str)
         for cb in self.callbacks:
-            logger.debug('Calling %s, params: %s'. cb, params_str)
+            logger.debug('Calling %s, params: %s', cb, params_str)
             cb(params)
