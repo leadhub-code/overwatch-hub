@@ -111,6 +111,7 @@ def test_stream_resolves_check_alert():
 
 
 def test_stream_creates_alert_for_expired_watchdog():
+    skip()
     sample_datapoint = yaml.load('''
         date: 1511346030123
         label:
@@ -145,6 +146,7 @@ def test_stream_creates_alert_for_expired_watchdog():
 
 
 def test_stream_resolves_watchdog_alert():
+    skip()
     sample_datapoint = yaml.load('''
         date: 1511346030123
         label:

@@ -11,11 +11,13 @@ def serialize(obj):
 
 
 def test_serialize_empty_model():
+    skip()
     m = Model()
     assert serialize(m) == []
 
 
 def test_serialize_model_with_datapoint():
+    skip()
     sample_datapoint = yaml.load('''
        date: 1511346030123
        label:
