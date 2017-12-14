@@ -1,6 +1,7 @@
 import logging
 from time import time
 
+from .errors import ModelReviveError
 from .custom_checks import CustomChecks
 from .streams import Streams
 
@@ -12,13 +13,12 @@ class Model:
 
     def __init__(self):
         self.streams = Streams()
-        self.custom_checks = CustomChecks()
-        self.custom_checks.subscribe_custom_check_added(self._on_custom_check_added)
+        #self.custom_checks = CustomChecks()
+        #self.custom_checks.subscribe_custom_check_added(self._on_custom_check_added)
 
     def _on_custom_check_added(self, custom_check):
         for stream in self.streams.get_all():
             custom_check.check_stream(stream)
-        
 
     def add_datapoint(self, label, date, snapshot):
         assert isinstance(date, int)
@@ -37,14 +37,19 @@ class Model:
         for stream in self.streams.get_all():
             stream.check_watchdogs(now_date)
 
-    def serialize(self, acc):
-        acc(b'Model')
-        self.streams.se
-        acc(b'/Model')
-        return {
-            'streams': self.streams.serialize(),
-            'custom_checks': self.custom_checks.serialize(),
-        }
+    def serialize(self, write):
+        write(b'Model')
+        #self.streams.se
+        write(b'/Model')
+
+    @classmethod
+    def revive(cls, read):
+        m = cls()
+        if read() != b'Model':
+            raise ModelReviveError()
+        if read() != b'/Model':
+            raise ModelReviveError()
+        return m
 
     @classmethod
     def deserialize(cls, data):

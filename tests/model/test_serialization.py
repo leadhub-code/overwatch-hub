@@ -10,10 +10,19 @@ def serialize(obj):
     return data
 
 
+def it(lst):
+    iterator = iter(lst)
+    return lambda: next(iterator)
+
+
 def test_serialize_empty_model():
-    skip()
     m = Model()
-    assert serialize(m) == []
+    data = serialize(m)
+    assert data == [
+        b'Model',
+        b'/Model',
+    ]
+    assert Model.revive(it(data))
 
 
 def test_serialize_model_with_datapoint():
