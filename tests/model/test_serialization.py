@@ -17,6 +17,13 @@ def it(lst):
 
 def test_serialize_empty_model():
     m = Model()
+    data = m.serialize()
+    assert data == b'Model\n/Model\n'
+    assert Model.revive(data)
+
+
+def test_serialize_empty_model_with_custom_read_write_functions():
+    m = Model()
     data = serialize(m)
     assert data == [
         b'Model',

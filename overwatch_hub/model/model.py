@@ -1,3 +1,4 @@
+from io import BytesIO
 import logging
 from time import time
 
@@ -37,13 +38,23 @@ class Model:
         for stream in self.streams.get_all():
             stream.check_watchdogs(now_date)
 
-    def serialize(self, write):
+    def serialize(self, write=None):
+        if write is None:
+            f = BytesIO()
+            def write(data):
+                f.write(data)
+                f.write(b'\n')
+            self.serialize(write)
+            return f.getvalue()
         write(b'Model')
-        #self.streams.se
+        #self.streams.serialize(write)
         write(b'/Model')
 
     @classmethod
     def revive(cls, read):
+        if isinstance(read, bytes):
+            f = BytesIO(read)
+            return cls.revive(lambda: f.readline().rstrip())
         m = cls()
         if read() != b'Model':
             raise ModelReviveError()
