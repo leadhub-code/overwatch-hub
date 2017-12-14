@@ -51,20 +51,23 @@ class Model:
         write(b'/Model')
 
     @classmethod
-    def revive(cls, read):
-        if isinstance(read, bytes):
-            f = BytesIO(read)
-            return cls.revive(lambda: f.readline().rstrip())
+    def revive(cls, src):
+        if isinstance(src, bytes):
+            f = BytesIO(src)
+            read = lambda: f.readline().rstrip()
+        elif callable(src):
+            read = src
+        elif hasattr(src, 'readline'):
+            read = lambda: src.readline().rstrip()
+        else:
+            raise Exception('Parameter read must be bytes or callable')
         m = cls()
-        if read() != b'Model':
-            raise ModelReviveError()
-        if read() != b'/Model':
-            raise ModelReviveError()
+        m.deserialize(read)
         return m
 
-    @classmethod
-    def deserialize(cls, data):
-        model = cls()
-        model.streams = Streams.deserialize(data['streams'])
-        model.custom_checks = CustomChecks.deserialize(data['custom_checks'])
-        return model
+    def deserialize(self, read):
+        if read() != b'Model':
+            raise ModelReviveError()
+        #m.streams = Streams.revive(read)
+        if read() != b'/Model':
+            raise ModelReviveError()

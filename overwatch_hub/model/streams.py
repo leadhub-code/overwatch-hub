@@ -34,6 +34,7 @@ class Streams:
     def get_by_id(self, stream_id):
         return self._by_id[stream_id]
 
+    '''
     def serialize(self):
         return [stream.serialize() for stream in self._by_id.values()]
 
@@ -46,6 +47,7 @@ class Streams:
             streams._by_label[_serialize_label(stream.label)] = stream
             streams._by_id[stream.id] = stream
         return streams
+    '''
 
 
 def _serialize_label(label):
