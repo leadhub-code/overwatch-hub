@@ -1,2 +1,2 @@
-class ModelReviveError (Exception):
+class ModelDeserializeError (Exception):
     pass

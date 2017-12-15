@@ -2,7 +2,7 @@ from io import BytesIO
 import logging
 from time import time
 
-from .errors import ModelReviveError
+from .errors import ModelDeserializeError
 from .custom_checks import CustomChecks
 from .streams import Streams
 
@@ -20,13 +20,6 @@ class Model:
     def _on_custom_check_added(self, custom_check):
         for stream in self.streams.get_all():
             custom_check.check_stream(stream)
-
-    def add_datapoint(self, label, date, snapshot):
-        assert isinstance(date, int)
-        stream = self.streams.get_or_create_by_label(label)
-        logger.info('Adding datapoint stream: %s date: %r', stream.id, date)
-        stream.add_datapoint(date, snapshot)
-        self.custom_checks.check_stream(stream)
 
     def add_custom_check(self, **kwargs):
         ch = self.custom_checks.add_custom_check(**kwargs)
@@ -47,7 +40,7 @@ class Model:
             self.serialize(write)
             return f.getvalue()
         write(b'Model')
-        #self.streams.serialize(write)
+        self.streams.serialize(write)
         write(b'/Model')
 
     @classmethod
@@ -67,7 +60,7 @@ class Model:
 
     def deserialize(self, read):
         if read() != b'Model':
-            raise ModelReviveError()
-        #m.streams = Streams.revive(read)
+            raise ModelDeserializeError()
+        self.streams.deserialize(read)
         if read() != b'/Model':
-            raise ModelReviveError()
+            raise ModelDeserializeError()

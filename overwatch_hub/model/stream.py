@@ -1,18 +1,157 @@
+from collections import OrderedDict
 import logging
+import simplejson as json
+import sys
+from sys import intern
 from time import time
 from uuid import uuid4
 
-from ..util import intern_keys
+from ..util import intern_keys, serialize_label, sha256_b64, json_dumps_compact
 
-from .snapshot_helpers import snapshot_to_items
-from .snapshot_helpers import insert_point_to_history_items
-from .snapshot_helpers import retrieve_point_from_history_items
+from .errors import ModelDeserializeError
+from .stream_item import StreamItem
 
 
 logger = logging.getLogger(__name__)
 
+py_dict_ordered = sys.version >= '3.6'
+
+
+def generate_stream_id(label):
+    r = serialize_label(label).encode()
+    h = sha256_b64(r).replace('-', '').replace('_', '')
+    return 'S' + h[:15]
+
+
+assert generate_stream_id({'foo': 'bar'}) == 'STYFHh3z29EPT8mC'
+
+
+def flatten_snapshot(snapshot):
+    assert isinstance(snapshot, dict)
+    s_check = intern('check')
+    s_watchdog = intern('watchdog')
+    s_value = intern('value')
+    nodes_by_path = OrderedDict()
+
+    def get_node(path):
+        assert isinstance(path, tuple)
+        if path not in nodes_by_path:
+            nodes_by_path[path] = {}
+        return nodes_by_path[path]
+
+    def r(path, obj):
+        if isinstance(obj, dict):
+            if obj.get('__check'):
+                get_node(path)[s_check] = intern_keys(obj['__check'])
+
+            if obj.get('__watchdog'):
+                get_node(path)[s_watchdog] = intern_keys(obj['__watchdog'])
+
+            if '__value' in obj:
+                get_node(path)[s_value] = intern_keys(obj['__value'])
+
+            obj_items = obj.items()
+            if not isinstance(obj, OrderedDict) and not py_dict_ordered:
+                obj_items = sorted(obj_items)
+
+            for k, v in obj_items:
+                if k.startswith('__'):
+                    continue
+                r(path + (intern(k), ), v)
+        else:
+            get_node(path)[s_value] = obj
+
+    r(tuple(), snapshot)
+    return nodes_by_path
+
+
+assert flatten_snapshot({'foo': 'bar'}) == {('foo',): {'value': 'bar'}}
+
 
 class Stream:
+
+    def __init__(self, label):
+        self.id = generate_stream_id(label)
+        self.label = label
+        self.snapshot_dates = []
+        self.items = OrderedDict() # path -> StreamItem
+
+    def __repr__(self):
+        return '<{cls} {s.id} {s.label!r}>'.format(
+            cls=self.__class__.__name__,
+            s=self)
+
+    def serialize(self, write):
+        write(b'Stream')
+        data = {
+            'id': self.id,
+            'label': self.label,
+            'snapshot_dates': self.snapshot_dates,
+        }
+        data_json = json_dumps_compact(data)
+        assert json.loads(data_json) == data
+        write(data_json.encode())
+        for path, stream_item in self.items.items():
+            write(b'-item')
+            write(json.dumps({'path': path}).encode())
+            stream_item.serialize(write)
+        write(b'/Stream')
+
+    @classmethod
+    def revive(cls, read):
+        stream = cls(label={})
+        stream.deserialize(read)
+        return stream
+
+    def deserialize(self, read):
+        if read() != b'Stream':
+            raise ModelDeserializeError()
+        data = json.loads(read().decode())
+        self.label = data['label']
+        self.id = data['id']
+        self.snapshot_dates = data['snapshot_dates']
+        while True:
+            x = read()
+            if x == b'/Stream':
+                break
+            elif x == b'-item':
+                item_data = json.loads(read().decode())
+                item_path = tuple(item_data['path'])
+                stream_item = StreamItem.revive(read)
+                self.items[item_path] = stream_item
+            else:
+                raise ModelDeserializeError()
+
+    def add_datapoint(self, timestamp_ms, snapshot):
+        assert isinstance(timestamp_ms, int)
+        snapshot_items = flatten_snapshot(snapshot)
+        self.snapshot_dates.append(timestamp_ms)
+        for path, item_data in snapshot_items.items():
+            if path not in self.items:
+                self.items[path] = StreamItem()
+            stream_item = self.items[path]
+            stream_item.add_snapshot(
+                timestamp_ms,
+                value=item_data.get('value'),
+                check=item_data.get('check'),
+                watchdog=item_data.get('watchdog'))
+        for path, stream_item in self.items.items():
+            if path not in snapshot_items:
+                stream_item.add_snapshot(
+                    timestamp_ms,
+                    value=None,
+                    check=None,
+                    watchdog=None)
+        '''
+        insert_point_to_history_items(self.history_items, timestamp_ms, snapshot_items)
+        self.dates.add(timestamp_ms)
+        if self.last_date is None or timestamp_ms >= self.last_date:
+            self.last_date = timestamp_ms
+            self._process_checks()
+        '''
+
+"""
+class OLDStream:
 
     def __init__(self, label):
         assert isinstance(label, dict)
@@ -167,3 +306,4 @@ class Stream:
 
     def get_all_watchdog_alerts(self):
         return list(self.watchdog_alerts_by_id.values())
+"""
