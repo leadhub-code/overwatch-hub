@@ -26,3 +26,4 @@ workflows:
         jobs:
             - build_python36
             - build_python35
+            # we don't support Python 3.4 because of "async def"
