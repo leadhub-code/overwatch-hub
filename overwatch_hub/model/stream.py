@@ -1,4 +1,3 @@
-from collections import OrderedDict
 import logging
 import simplejson as json
 import sys
@@ -31,7 +30,7 @@ def flatten_snapshot(snapshot):
     s_check = intern('check')
     s_watchdog = intern('watchdog')
     s_value = intern('value')
-    nodes_by_path = OrderedDict()
+    nodes_by_path = {}
 
     def get_node(path):
         assert isinstance(path, tuple)
@@ -50,11 +49,7 @@ def flatten_snapshot(snapshot):
             if '__value' in obj:
                 get_node(path)[s_value] = intern_keys(obj['__value'])
 
-            obj_items = obj.items()
-            if not isinstance(obj, OrderedDict) and not py_dict_ordered:
-                obj_items = sorted(obj_items)
-
-            for k, v in obj_items:
+            for k, v in obj.items():
                 if k.startswith('__'):
                     continue
                 r(path + (intern(k), ), v)
@@ -74,7 +69,7 @@ class Stream:
         self.id = generate_stream_id(label)
         self.label = label
         self.snapshot_dates = []
-        self.items = OrderedDict() # path -> StreamItem
+        self.items = {} # path -> StreamItem
 
     def __repr__(self):
         return '<{cls} {s.id} {s.label!r}>'.format(
@@ -91,7 +86,7 @@ class Stream:
         data_json = json_dumps_compact(data)
         assert json.loads(data_json) == data
         write(data_json.encode())
-        for path, stream_item in self.items.items():
+        for path, stream_item in sorted(self.items.items()):
             write(b'-item')
             write(json.dumps({'path': path}).encode())
             stream_item.serialize(write)

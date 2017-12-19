@@ -16,6 +16,7 @@ def intern_keys(d):
         r[k] = v
     return r
 
+
 def json_dumps_compact(obj):
     return json.dumps(
         obj,
