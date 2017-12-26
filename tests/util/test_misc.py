@@ -1,8 +1,5 @@
-from overwatch_hub.util import serialize_label, sha256_b64
+from overwatch_hub.util import sha256_b64
 
-
-def test_serialize_label():
-    assert serialize_label({'foo': 'bar'}) == '[["foo","bar"]]'
 
 
 def test_sha256_b64():

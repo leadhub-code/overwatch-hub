@@ -5,13 +5,13 @@ import yaml
 from overwatch_hub.model import Model
 
 
-def serialize(obj):
+def _serialize(obj):
     data = []
     obj.serialize(data.append)
     return data
 
 
-def it(lst):
+def _it(lst):
     iterator = iter(lst)
     return lambda: next(iterator)
 
@@ -25,16 +25,16 @@ def test_serialize_empty_model():
 
 def test_serialize_empty_model_with_custom_read_write_functions():
     m = Model()
-    data = serialize(m)
+    data = _serialize(m)
     assert data == [
         b'Model',
         b'Streams',
         b'/Streams',
         b'/Model',
     ]
-    assert Model.revive(it(data))
+    assert Model.revive(_it(data))
     m2 = Model()
-    m2.deserialize(it(data))
+    m2.deserialize(_it(data))
 
 
 def test_serialize_model_with_datapoint():

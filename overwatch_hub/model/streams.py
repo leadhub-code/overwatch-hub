@@ -1,9 +1,8 @@
 import logging
 
-from ..util import serialize_label
-
 from .errors import ModelDeserializeError
 from .stream import Stream
+from .stream_helpers import serialize_label
 
 
 logger = logging.getLogger(__name__)

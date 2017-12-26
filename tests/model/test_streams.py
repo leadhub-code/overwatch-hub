@@ -6,56 +6,6 @@ from overwatch_hub.model import Model
 from overwatch_hub.util.datetime import parse_date_to_timestamp_ms
 
 
-def test_add_datapoint_and_check_stream_attributes():
-    sample_datapoint = yaml.load('''
-        timestamp_ms: 1511346030123
-        label:
-            k1: v1
-            k2: v2
-        snapshot:
-            foo: bar
-            response:
-                __value: 200
-                __check:
-                    state: green
-            watchdog:
-                __watchdog:
-                    deadline: 1511346090000
-    ''')
-    m = Model()
-    m.streams.add_datapoint(**sample_datapoint)
-    stream, = m.streams.get_all()
-    assert stream.id
-    assert stream.label == {'k1': 'v1', 'k2': 'v2'}
-    data = m.serialize()
-    assert Model.revive(data).serialize() == data
-
-    """
-    assert stream.dates == {1511346030123}
-    assert stream.history_items == {
-        ('foo',): {
-            'value_history': {1511346030123: 'bar'},
-        },
-        ('response',): {
-            'check_history': {1511346030123: {'state': 'green'}},
-            'value_history': {1511346030123: 200}},
-        ('watchdog',): {
-            'watchdog_history': {1511346030123: {'deadline': 1511346090000}},
-        },
-    }
-    assert stream.get_current_datapoint() == (
-        1511346030123, {
-            ('foo',): {'value': 'bar'},
-            ('response',): {'check': {'state': 'green'}, 'value': 200},
-            ('watchdog',): {'watchdog': {'deadline': 1511346090000}},
-        })
-    assert stream.get_current_checks() == (
-        1511346030123, {('response',): {'state': 'green'}})
-    assert stream.get_current_watchdogs() == (
-        1511346030123, {('watchdog',): {'deadline': 1511346090000}})
-    """
-
-
 def test_stream_creates_alert_for_red_check():
     skip()
     sample_datapoint = yaml.load('''

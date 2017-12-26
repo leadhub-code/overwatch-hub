@@ -25,11 +25,6 @@ def json_dumps_compact(obj):
         separators=(',', ':'))
 
 
-def serialize_label(label):
-    assert isinstance(label, dict)
-    return json_dumps_compact(sorted(label.items()))
-
-
 def sha256_b64(data):
     assert isinstance(data, bytes)
     h = hashlib.sha256(data).digest()

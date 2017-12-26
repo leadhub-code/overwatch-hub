@@ -1,1 +1,1 @@
-from .misc import intern_keys, serialize_label, sha256_b64, json_dumps_compact
+from .misc import intern_keys, sha256_b64, json_dumps_compact
