@@ -39,3 +39,33 @@ def test_add_datapoint_and_check_stream_item_attributes():
     assert stream.items[('response',)].check_history == {1511346030123: {'state': 'green'}}
     assert stream.items[('watchdog',)].current_watchdog == {'deadline': 1511346090000}
     assert stream.items[('watchdog',)].watchdog_history == {1511346030123: {'deadline': 1511346090000}}
+
+
+def test_stream_creates_alert_for_red_check():
+    sample_datapoint = yaml.load('''
+        timestamp_ms: 1511346030123
+        label:
+            k1: v1
+            k2: v2
+        snapshot:
+            foo: bar
+            response:
+                __value: 200
+                __check:
+                    state: red
+    ''')
+    m = Model()
+    m.streams.add_datapoint(**sample_datapoint)
+    stream, = m.streams.get_all()
+    assert stream.get_current_checks() == {('response',): {'state': 'red'}}
+    alert, = stream.get_current_check_alerts()
+    assert alert == {
+        'type': 'check_alert',
+        'id': alert['id'],
+        'stream_label': {'k1': 'v1', 'k2': 'v2'},
+        'path': ('response',),
+        'initial_state': 'red',
+        'current_state': 'red',
+        'start_date': 1511346030123,
+        'end_date': None,
+    }

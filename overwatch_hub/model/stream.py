@@ -5,7 +5,7 @@ from sys import intern
 from time import time
 from uuid import uuid4
 
-from ..util import intern_keys, sha256_b64, json_dumps_compact
+from ..util import intern_keys, json_dumps_compact
 
 from .errors import ModelDeserializeError
 from .stream_helpers import generate_stream_id, flatten_snapshot
@@ -96,6 +96,9 @@ class Stream:
             self.last_date = timestamp_ms
             self._process_checks()
         '''
+
+    def get_current_checks(self):
+        return {path: item.current_check for path, item in self.items.items() if item.current_check}
 
 """
 class OLDStream:
