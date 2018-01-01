@@ -70,14 +70,29 @@ class Stream:
                 raise ModelDeserializeError()
 
     def add_datapoint(self, timestamp_ms, snapshot):
+        '''
+        Add datapoint to this stream
+
+        Example:
+
+            stream.add_datapoint(
+                timestamp_ms=1511346030123,
+                snapshot=yaml.load("""
+                    foo: bar
+                    response:
+                        __value: 200
+                        __check:
+                            state: green
+                    watchdog:
+                        __watchdog:
+                            deadline: 1511346090000
+                """))
+        '''
         assert isinstance(timestamp_ms, int)
         snapshot_items = flatten_snapshot(snapshot)
         self.snapshot_dates.append(timestamp_ms)
         for path, item_data in snapshot_items.items():
-            if path not in self.items:
-                self.items[path] = StreamItem()
-            stream_item = self.items[path]
-            stream_item.add_snapshot(
+            self._get_stream_item(path).add_snapshot(
                 timestamp_ms,
                 value=item_data.get('value'),
                 check=item_data.get('check'),
@@ -96,6 +111,12 @@ class Stream:
             self.last_date = timestamp_ms
             self._process_checks()
         '''
+
+    def _get_stream_item(self, path):
+        assert isinstance(path, tuple)
+        if path not in self.items:
+            self.items[path] = StreamItem()
+        return self.items[path]
 
     def get_current_checks(self):
         return {path: item.current_check for path, item in self.items.items() if item.current_check}
