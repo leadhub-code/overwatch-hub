@@ -6,7 +6,6 @@ from overwatch_hub.model import Model
 from overwatch_hub.util.datetime import parse_date_to_timestamp_ms
 
 
-
 def test_stream_creates_alert_for_expired_watchdog():
     skip()
     sample_datapoint = yaml.load('''
