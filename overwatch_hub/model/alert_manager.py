@@ -25,10 +25,20 @@ class AlertManager:
         # create/update check alerts
         for path, check in current_checks.items():
             alert = active_check_alerts.get(path)
+            if check['state'] == 'green' and alert:
+                alert.deactivate()
+            elif check['state'] != 'green' and (not alert or check['state'] != alert.severity):
+                if alert:
+                    alert.deactivate()
+                self._alerts.create_alert(
+                    stream_id=stream.id,
+                    stream_label=stream.label,
+                    path=path,
+                    severity=check['state'])
         # deactivate check alerts
         for path, alert in active_check_alerts.items():
             if path not in active_check_alerts:
-                pass
+                alert.deactivate()
         # create/update watchdog alerts
         for path, watchdog in current_watchdogs.items():
             pass
