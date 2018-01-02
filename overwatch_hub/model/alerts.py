@@ -23,11 +23,15 @@ class Alerts:
         if read() != b'/Alerts\n':
             raise ModelDeserializeError()
 
-    def get_active_alerts(self, stream_id):
+    def get_active_alerts(self):
+        return list(self.active_alerts.values())
+
+    def get_stream_active_alerts(self, stream_id):
         return [a for a in self.active_alerts.values() if a.stream_id == stream_id]
 
-    def create_alert(self, severity, stream_id, stream_label, path):
+    def create_alert(self, alert_type, severity, stream_id, stream_label, path):
         alert = Alert(
+            alert_type=alert_type,
             severity=severity,
             stream_id=stream_id,
             stream_label=stream_label,

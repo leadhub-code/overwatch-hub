@@ -10,9 +10,11 @@ logger = logging.getLogger(__name__)
 
 class Alert:
 
-    def __init__(self, severity, stream_id, stream_label, path, update_callback):
+    def __init__(self, alert_type, severity, stream_id, stream_label, path, update_callback):
+        assert alert_type in {'check', 'watchdog'}
         assert severity in {'red', 'yellow'}
         assert isinstance(path, tuple)
+        self.alert_type = alert_type
         self.id = generate_alert_id(severity, stream_id, path)
         self.severity = severity
         self.stream_id = stream_id
@@ -22,7 +24,7 @@ class Alert:
         self._update_callback = update_callback
 
     def __repr__(self):
-        return '<{cls} {s.severity} stream: {s.stream_id} {s.stream_label!r} path: {s.path!r}>'.format(
+        return '<{cls} {s.id} {s.alert_type} {s.severity} stream: {s.stream_id} {s.stream_label!r} path: {s.path!r}>'.format(
             cls=self.__class__.__name__, s=self)
 
     def deactivate(self):

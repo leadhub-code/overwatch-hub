@@ -19,9 +19,9 @@ class AlertManager:
         logger.debug('Processing stream %s', stream)
         current_checks = stream.get_current_checks()
         current_watchdogs = stream.get_current_watchdogs()
-        active_alerts = self._alerts.get_active_alerts(stream_id=stream.id)
-        active_check_alerts = {a.path: a for a in active_alerts if a.type == 'check'}
-        active_watchdog_alerts = {a.path: a for a in active_alerts if a.type == 'watchdog'}
+        active_alerts = self._alerts.get_stream_active_alerts(stream_id=stream.id)
+        active_check_alerts = {a.path: a for a in active_alerts if a.alert_type == 'check'}
+        active_watchdog_alerts = {a.path: a for a in active_alerts if a.alert_type == 'watchdog'}
         # create/update check alerts
         for path, check in current_checks.items():
             alert = active_check_alerts.get(path)
@@ -31,6 +31,7 @@ class AlertManager:
                 if alert:
                     alert.deactivate()
                 self._alerts.create_alert(
+                    alert_type='check',
                     stream_id=stream.id,
                     stream_label=stream.label,
                     path=path,
