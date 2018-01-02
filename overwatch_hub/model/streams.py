@@ -1,5 +1,7 @@
 import logging
 
+from ..util import ObservableEvent
+
 from .errors import ModelDeserializeError
 from .stream import Stream
 from .stream_helpers import serialize_label
@@ -13,6 +15,7 @@ class Streams:
     def __init__(self):
         self._by_label = {} # serialized label -> Series
         self._by_id = {}
+        self.on_stream_updated = ObservableEvent()
 
     def serialize(self, write):
         write(b'Streams\n')
@@ -29,7 +32,8 @@ class Streams:
             if line == b'/Streams\n':
                 break
             elif line == b'-stream\n':
-                stream = Stream.revive(readline)
+                stream = Stream.revive(readline,
+                    on_stream_updated=self.on_stream_updated)
                 self._by_id[stream.id] = stream
                 self._by_label[serialize_label(stream.label)] = stream
             else:
@@ -42,7 +46,9 @@ class Streams:
     def get_or_create_by_label(self, label):
         sl = serialize_label(label)
         if sl not in self._by_label:
-            stream = Stream(label)
+            stream = Stream(
+                label=label,
+                on_stream_updated=self.on_stream_updated)
             self._by_id[stream.id] = stream
             self._by_label[sl] = stream
         return self._by_label[sl]

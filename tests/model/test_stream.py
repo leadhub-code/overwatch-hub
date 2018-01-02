@@ -4,11 +4,6 @@ import yaml
 from overwatch_hub.model import Model
 
 
-def _stable_serialization(model):
-    data = model.serialize()
-    return Model.revive(data).serialize() == data
-
-
 def test_add_datapoint_and_check_stream_item_attributes():
     m = Model()
     m.streams.add_datapoint(
@@ -28,7 +23,7 @@ def test_add_datapoint_and_check_stream_item_attributes():
     assert stream.id
     assert stream.label == {'k1': 'v1', 'k2': 'v2'}
     assert stream.snapshot_dates == [1511346030123]
-    assert _stable_serialization(m)
+    assert Model.revive(m.serialize()).serialize() == m.serialize()
     assert stream.items[('foo',)].current_value == 'bar'
     assert stream.items[('foo',)].value_history == {1511346030123: 'bar'}
     assert stream.items[('response',)].current_value == 200
@@ -40,20 +35,17 @@ def test_add_datapoint_and_check_stream_item_attributes():
 
 
 def test_stream_creates_alert_for_red_check():
-    sample_datapoint = yaml.load('''
-        timestamp_ms: 1511346030123
-        label:
-            k1: v1
-            k2: v2
-        snapshot:
+    m = Model()
+    m.streams.add_datapoint(
+        timestamp_ms=1511346030123,
+        label={'k1': 'v1', 'k2': 'v2'},
+        snapshot=yaml.load('''
             foo: bar
             response:
                 __value: 200
                 __check:
                     state: red
-    ''')
-    m = Model()
-    m.streams.add_datapoint(**sample_datapoint)
+        '''))
     stream, = m.streams.get_all()
     assert stream.get_current_checks() == {('response',): {'state': 'red'}}
     skip()
