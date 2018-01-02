@@ -2,6 +2,7 @@ from io import BytesIO
 import logging
 from time import time
 
+from .alerts import Alerts
 from .errors import ModelDeserializeError
 from .custom_checks import CustomChecks
 from .streams import Streams
@@ -14,6 +15,7 @@ class Model:
 
     def __init__(self):
         self.streams = Streams()
+        self.alerts = Alerts()
         #self.custom_checks = CustomChecks()
         #self.custom_checks.subscribe_custom_check_added(self._on_custom_check_added)
 
@@ -40,7 +42,10 @@ class Model:
             self.serialize(write)
             return f.getvalue()
         write(b'Model')
+        write(b'-streams')
         self.streams.serialize(write)
+        write(b'-alerts')
+        self.alerts.serialize(write)
         write(b'/Model')
 
     @classmethod
@@ -59,8 +64,9 @@ class Model:
         return m
 
     def deserialize(self, read):
-        if read() != b'Model':
-            raise ModelDeserializeError()
+        if read() != b'Model': raise ModelDeserializeError()
+        if read() != b'-streams': raise ModelDeserializeError()
         self.streams.deserialize(read)
-        if read() != b'/Model':
-            raise ModelDeserializeError()
+        if read() != b'-alerts': raise ModelDeserializeError()
+        self.alerts.deserialize(read)
+        if read() != b'/Model': raise ModelDeserializeError()

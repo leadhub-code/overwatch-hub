@@ -19,7 +19,7 @@ def _it(lst):
 def test_serialize_empty_model():
     m = Model()
     data = m.serialize()
-    assert data == b'Model\nStreams\n/Streams\n/Model\n'
+    assert data == b'Model\n-streams\nStreams\n/Streams\n-alerts\nAlerts\n/Alerts\n/Model\n'
     assert Model.revive(data)
 
 
@@ -28,8 +28,12 @@ def test_serialize_empty_model_with_custom_read_write_functions():
     data = _serialize(m)
     assert data == [
         b'Model',
+        b'-streams',
         b'Streams',
         b'/Streams',
+        b'-alerts',
+        b'Alerts',
+        b'/Alerts',
         b'/Model',
     ]
     assert Model.revive(_it(data))
@@ -58,6 +62,7 @@ def test_serialize_model_with_datapoint():
     data = m.serialize()
     assert data.decode() == dedent('''\
         Model
+        -streams
         Streams
         -stream
         Stream
@@ -79,6 +84,9 @@ def test_serialize_model_with_datapoint():
         /StreamItem
         /Stream
         /Streams
+        -alerts
+        Alerts
+        /Alerts
         /Model
     ''')
     m2 = Model.revive(data)
