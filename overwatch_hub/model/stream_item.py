@@ -1,7 +1,7 @@
 import logging
 import simplejson as json
 
-from ..util import json_dumps_compact
+from ..util import serialize_json, deserialize_json
 
 from .errors import ModelDeserializeError
 
@@ -21,17 +21,16 @@ class StreamItem:
         self.watchdog_history = {}
 
     def serialize(self, write):
-        write(b'StreamItem')
-        data = {
+        write(b'StreamItem\n')
+        write(serialize_json({
             'current_value': self.current_value,
             'current_check': self.current_check,
             'current_watchdog': self.current_watchdog,
             'value_history': sorted(self.value_history.items()),
             'check_history': sorted(self.check_history.items()),
             'watchdog_history': sorted(self.watchdog_history.items()),
-        }
-        write(json_dumps_compact(data).encode())
-        write(b'/StreamItem')
+        }))
+        write(b'/StreamItem\n')
 
     @classmethod
     def revive(self, read):
@@ -39,11 +38,11 @@ class StreamItem:
         stream_item.deserialize(read)
         return stream_item
 
-    def deserialize(self, read):
-        if read() != b'StreamItem':
+    def deserialize(self, readline):
+        if readline() != b'StreamItem\n':
             raise ModelDeserializeError()
-        data = json.loads(read().decode())
-        if read() != b'/StreamItem':
+        data = deserialize_json(readline())
+        if readline() != b'/StreamItem\n':
             raise ModelDeserializeError()
         self.current_value = data['current_value']
         self.current_check = data['current_check']

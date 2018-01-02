@@ -5,7 +5,7 @@ from sys import intern
 from time import time
 from uuid import uuid4
 
-from ..util import intern_keys, json_dumps_compact
+from ..util import intern_keys, serialize_json, deserialize_json
 
 from .errors import ModelDeserializeError
 from .stream_helpers import generate_stream_id, flatten_snapshot
@@ -29,20 +29,17 @@ class Stream:
             s=self)
 
     def serialize(self, write):
-        write(b'Stream')
-        data = {
+        write(b'Stream\n')
+        write(serialize_json({
             'id': self.id,
             'label': self.label,
             'snapshot_dates': self.snapshot_dates,
-        }
-        data_json = json_dumps_compact(data)
-        assert json.loads(data_json) == data
-        write(data_json.encode())
+        }, check=True))
         for path, stream_item in sorted(self.items.items()):
-            write(b'-item')
-            write(json.dumps({'path': path}).encode())
+            write(b'-item\n')
+            write(serialize_json({'path': path}))
             stream_item.serialize(write)
-        write(b'/Stream')
+        write(b'/Stream\n')
 
     @classmethod
     def revive(cls, read):
@@ -50,24 +47,23 @@ class Stream:
         stream.deserialize(read)
         return stream
 
-    def deserialize(self, read):
-        if read() != b'Stream':
-            raise ModelDeserializeError()
-        data = json.loads(read().decode())
+    def deserialize(self, readline):
+        if readline() != b'Stream\n': raise ModelDeserializeError()
+        data = deserialize_json(readline())
         self.label = data['label']
         self.id = data['id']
         self.snapshot_dates = data['snapshot_dates']
         while True:
-            x = read()
-            if x == b'/Stream':
+            line = readline()
+            if line == b'/Stream\n':
                 break
-            elif x == b'-item':
-                item_data = json.loads(read().decode())
+            elif line == b'-item\n':
+                item_data = deserialize_json(readline())
                 item_path = tuple(item_data['path'])
-                stream_item = StreamItem.revive(read)
+                stream_item = StreamItem.revive(readline)
                 self.items[item_path] = stream_item
             else:
-                raise ModelDeserializeError()
+                raise ModelDeserializeError('Line: {!r}'.format(line))
 
     def add_datapoint(self, timestamp_ms, snapshot):
         '''

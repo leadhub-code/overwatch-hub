@@ -12,11 +12,11 @@ class Alerts:
         pass
 
     def serialize(self, write):
-        write(b'Alerts')
-        write(b'/Alerts')
+        write(b'Alerts\n')
+        write(b'/Alerts\n')
 
     def deserialize(self, read):
-        if read() != b'Alerts':
+        if read() != b'Alerts\n':
             raise ModelDeserializeError()
-        if read() != b'/Alerts':
+        if read() != b'/Alerts\n':
             raise ModelDeserializeError()

@@ -36,37 +36,34 @@ class Model:
     def serialize(self, write=None):
         if write is None:
             f = BytesIO()
-            def write(data):
-                f.write(data)
-                f.write(b'\n')
-            self.serialize(write)
+            self.serialize(f.write)
             return f.getvalue()
-        write(b'Model')
-        write(b'-streams')
+        write(b'Model\n')
+        write(b'-streams\n')
         self.streams.serialize(write)
-        write(b'-alerts')
+        write(b'-alerts\n')
         self.alerts.serialize(write)
-        write(b'/Model')
+        write(b'/Model\n')
 
     @classmethod
     def revive(cls, src):
         if isinstance(src, bytes):
             f = BytesIO(src)
-            read = lambda: f.readline().rstrip()
+            readline = f.readline
         elif callable(src):
-            read = src
-        elif hasattr(src, 'readline'):
-            read = lambda: src.readline().rstrip()
+            readline = src
+        elif hasattr(src, 'readline') and callable(src.readline):
+            readline = src.readline
         else:
-            raise Exception('Parameter read must be bytes or callable')
+            raise Exception('Parameter src must be bytes or callable')
         m = cls()
-        m.deserialize(read)
+        m.deserialize(readline)
         return m
 
-    def deserialize(self, read):
-        if read() != b'Model': raise ModelDeserializeError()
-        if read() != b'-streams': raise ModelDeserializeError()
-        self.streams.deserialize(read)
-        if read() != b'-alerts': raise ModelDeserializeError()
-        self.alerts.deserialize(read)
-        if read() != b'/Model': raise ModelDeserializeError()
+    def deserialize(self, readline):
+        if readline() != b'Model\n': raise ModelDeserializeError()
+        if readline() != b'-streams\n': raise ModelDeserializeError()
+        self.streams.deserialize(readline)
+        if readline() != b'-alerts\n': raise ModelDeserializeError()
+        self.alerts.deserialize(readline)
+        if readline() != b'/Model\n': raise ModelDeserializeError()

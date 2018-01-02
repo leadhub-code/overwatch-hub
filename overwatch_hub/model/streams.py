@@ -15,21 +15,21 @@ class Streams:
         self._by_id = {}
 
     def serialize(self, write):
-        write(b'Streams')
+        write(b'Streams\n')
         for stream in self._by_id.values():
-            write(b'-stream')
+            write(b'-stream\n')
             stream.serialize(write)
-        write(b'/Streams')
+        write(b'/Streams\n')
 
-    def deserialize(self, read):
-        if read() != b'Streams':
+    def deserialize(self, readline):
+        if readline() != b'Streams\n':
             raise ModelDeserializeError()
         while True:
-            x = read()
-            if x == b'/Streams':
+            line = readline()
+            if line == b'/Streams\n':
                 break
-            elif x == b'-stream':
-                stream = Stream.revive(read)
+            elif line == b'-stream\n':
+                stream = Stream.revive(readline)
                 self._by_id[stream.id] = stream
                 self._by_label[serialize_label(stream.label)] = stream
             else:
