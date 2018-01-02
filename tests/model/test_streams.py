@@ -6,31 +6,6 @@ from overwatch_hub.model import Model
 from overwatch_hub.util.datetime import parse_date_to_timestamp_ms
 
 
-def test_stream_resolves_check_alert():
-    skip()
-    sample_datapoint = yaml.load('''
-        date: 1511346030123
-        label:
-            k1: v1
-            k2: v2
-        snapshot:
-            foo: bar
-            response:
-                __value: 200
-                __check:
-                    state: red
-    ''')
-    m = Model()
-    m.add_datapoint(**sample_datapoint)
-    stream, = m.streams.get_all()
-    assert len(stream.get_current_check_alerts()) == 1
-    sample_datapoint['date'] += 5000
-    sample_datapoint['snapshot']['response']['__check']['state'] = 'green'
-    m.add_datapoint(**sample_datapoint)
-    assert stream.get_current_check_alerts() == []
-    alert, = stream.get_all_check_alerts()
-    assert alert['end_date'] == 1511346030123 + 5000
-
 
 def test_stream_creates_alert_for_expired_watchdog():
     skip()
