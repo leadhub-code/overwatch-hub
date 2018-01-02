@@ -2,6 +2,7 @@ from io import BytesIO
 import logging
 from time import time
 
+from .alert_manager import AlertManager
 from .alerts import Alerts
 from .errors import ModelDeserializeError
 from .custom_checks import CustomChecks
@@ -16,22 +17,28 @@ class Model:
     def __init__(self):
         self.streams = Streams()
         self.alerts = Alerts()
+        self.alert_manager = AlertManager(self.alerts)
+        self.streams.on_stream_updated.subscribe(self.alert_manager.stream_updated)
         #self.custom_checks = CustomChecks()
         #self.custom_checks.subscribe_custom_check_added(self._on_custom_check_added)
 
-    def _on_custom_check_added(self, custom_check):
-        for stream in self.streams.get_all():
-            custom_check.check_stream(stream)
+    # def _on_custom_check_added(self, custom_check):
+    #     for stream in self.streams.get_all():
+    #         custom_check.check_stream(stream)
 
-    def add_custom_check(self, **kwargs):
-        ch = self.custom_checks.add_custom_check(**kwargs)
+    #def add_custom_check(self, **kwargs):
+    #    ch = self.custom_checks.add_custom_check(**kwargs)
 
-    def check_watchdogs(self, now_date=None):
-        if not now_date:
-            now_date = int(time() * 1000)
-        assert isinstance(now_date, int)
+    def check_watchdogs(self):
         for stream in self.streams.get_all():
-            stream.check_watchdogs(now_date)
+            self.alert_manager.check_stream(stream)
+
+    # def check_watchdogs(self, now_date=None):
+    #     if not now_date:
+    #         now_date = int(time() * 1000)
+    #     assert isinstance(now_date, int)
+    #     for stream in self.streams.get_all():
+    #         stream.check_watchdogs(now_date)
 
     def serialize(self, write=None):
         if write is None:
