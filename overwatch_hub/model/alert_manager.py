@@ -6,8 +6,9 @@ logger = logging.getLogger(__name__)
 
 class AlertManager:
 
-    def __init__(self, alerts):
+    def __init__(self, alerts, system):
         self._alerts = alerts
+        self._system = system
 
     def stream_updated(self, params):
         '''
@@ -38,12 +39,26 @@ class AlertManager:
                     severity=check['state'])
         # deactivate check alerts
         for path, alert in active_check_alerts.items():
-            if path not in active_check_alerts:
+            if path not in current_checks:
                 alert.deactivate()
         # create/update watchdog alerts
+        now = self._system.time_ms()
         for path, watchdog in current_watchdogs.items():
-            pass
+            expired = watchdog['deadline'] <= now
+            alert = active_watchdog_alerts.get(path)
+            logger.debug('Watchdog path: %r expired: %r alert: %r', path, expired, alert)
+            if not expired:
+                if alert:
+                    alert.deactivate()
+            else:
+                if not alert:
+                    self._alerts.create_alert(
+                        alert_type='watchdog',
+                        stream_id=stream.id,
+                        stream_label=stream.label,
+                        path=path,
+                        severity='red')
         # deactivate watchdog alerts
         for path, alert in active_watchdog_alerts.items():
             if path not in current_watchdogs:
-                pass
+                alert.deactivate()

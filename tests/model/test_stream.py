@@ -3,8 +3,8 @@ import yaml
 from overwatch_hub.model import Model
 
 
-def test_add_datapoint_and_check_stream_item_attributes():
-    m = Model()
+def test_add_datapoint_and_check_stream_item_attributes(system):
+    m = Model(system=system)
     m.streams.add_datapoint(
         timestamp_ms=1511346030123,
         label={'k1': 'v1', 'k2': 'v2'},

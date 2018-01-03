@@ -7,6 +7,7 @@ from .alerts import Alerts
 from .errors import ModelDeserializeError
 from .custom_checks import CustomChecks
 from .streams import Streams
+from .system import System
 
 
 logger = logging.getLogger(__name__)
@@ -14,10 +15,11 @@ logger = logging.getLogger(__name__)
 
 class Model:
 
-    def __init__(self):
+    def __init__(self, system=None):
+        self.system = system or System()
         self.streams = Streams()
         self.alerts = Alerts()
-        self.alert_manager = AlertManager(self.alerts)
+        self.alert_manager = AlertManager(alerts=self.alerts, system=self.system)
         self.streams.on_stream_updated.subscribe(self.alert_manager.stream_updated)
         #self.custom_checks = CustomChecks()
         #self.custom_checks.subscribe_custom_check_added(self._on_custom_check_added)

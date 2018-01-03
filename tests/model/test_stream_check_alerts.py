@@ -3,8 +3,8 @@ import yaml
 from overwatch_hub.model import Model
 
 
-def test_stream_creates_alert_for_red_check():
-    m = Model()
+def test_stream_creates_alert_for_red_check(system):
+    m = Model(system=system)
     m.streams.add_datapoint(
         timestamp_ms=1511346030123,
         label={'k1': 'v1', 'k2': 'v2'},
@@ -25,8 +25,8 @@ def test_stream_creates_alert_for_red_check():
     assert alert.path == ('response',)
 
 
-def test_red_alert_gets_deactivated_when_check_returns_to_green():
-    m = Model()
+def test_red_alert_gets_deactivated_when_check_returns_to_green(system):
+    m = Model(system=system)
     m.streams.add_datapoint(
         timestamp_ms=1511346030123,
         label={'k1': 'v1', 'k2': 'v2'},
@@ -54,8 +54,8 @@ def test_red_alert_gets_deactivated_when_check_returns_to_green():
     assert alert.is_active == False
 
 
-def test_new_alert_is_created_when_check_transitions_from_red_to_yellow():
-    m = Model()
+def test_new_alert_is_created_when_check_transitions_from_red_to_yellow(system):
+    m = Model(system=system)
     m.streams.add_datapoint(
         timestamp_ms=1511346030123,
         label={'k1': 'v1', 'k2': 'v2'},
@@ -83,8 +83,8 @@ def test_new_alert_is_created_when_check_transitions_from_red_to_yellow():
     assert alert2.is_active == True
 
 
-def test_new_alert_is_created_when_check_transitions_from_yellow_to_red():
-    m = Model()
+def test_new_alert_is_created_when_check_transitions_from_yellow_to_red(system):
+    m = Model(system=system)
     m.streams.add_datapoint(
         timestamp_ms=1511346030123,
         label={'k1': 'v1', 'k2': 'v2'},
