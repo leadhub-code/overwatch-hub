@@ -37,7 +37,6 @@ def test_red_alert_gets_deactivated_when_check_returns_to_green(system):
                 __check:
                     state: red
         '''))
-    stream, = m.streams.get_all()
     alert, = m.alerts.get_active_alerts()
     assert alert.is_active == True
     m.streams.add_datapoint(
@@ -64,7 +63,6 @@ def test_new_alert_is_created_when_check_transitions_from_red_to_yellow(system):
                 __check:
                     state: red
         '''))
-    stream, = m.streams.get_all()
     alert1, = m.alerts.get_active_alerts()
     assert alert1.is_active == True
     m.streams.add_datapoint(
@@ -93,7 +91,6 @@ def test_new_alert_is_created_when_check_transitions_from_yellow_to_red(system):
                 __check:
                     state: yellow
         '''))
-    stream, = m.streams.get_all()
     alert1, = m.alerts.get_active_alerts()
     assert alert1.is_active == True
     m.streams.add_datapoint(

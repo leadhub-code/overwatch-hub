@@ -23,6 +23,9 @@ class Alerts:
         if read() != b'/Alerts\n':
             raise ModelDeserializeError()
 
+    def get_all_alerts(self):
+        return list(self.all_alerts.values())
+
     def get_active_alerts(self):
         return list(self.active_alerts.values())
 
