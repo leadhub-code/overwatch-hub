@@ -19,7 +19,7 @@ def test_stream_creates_alert_for_red_check(system):
     assert stream.get_current_checks() == {('response',): {'state': 'red'}}
     alert, = m.alerts.get_active_alerts()
     assert alert.alert_type == 'check'
-    assert alert.is_active == True
+    assert alert.is_active() == True
     assert alert.severity == 'red'
     assert alert.stream_label == {'k1': 'v1', 'k2': 'v2'}
     assert alert.path == ('response',)
@@ -38,7 +38,7 @@ def test_red_alert_gets_deactivated_when_check_returns_to_green(system):
                     state: red
         '''))
     alert, = m.alerts.get_active_alerts()
-    assert alert.is_active == True
+    assert alert.is_active() == True
     m.streams.add_datapoint(
         timestamp_ms=1511346035900,
         label={'k1': 'v1', 'k2': 'v2'},
@@ -50,7 +50,7 @@ def test_red_alert_gets_deactivated_when_check_returns_to_green(system):
                     state: green
         '''))
     assert m.alerts.get_active_alerts() == []
-    assert alert.is_active == False
+    assert alert.is_active() == False
 
 
 def test_new_alert_is_created_when_check_transitions_from_red_to_yellow(system):
@@ -64,7 +64,7 @@ def test_new_alert_is_created_when_check_transitions_from_red_to_yellow(system):
                     state: red
         '''))
     alert1, = m.alerts.get_active_alerts()
-    assert alert1.is_active == True
+    assert alert1.is_active() == True
     m.streams.add_datapoint(
         timestamp_ms=1511346035900,
         label={'k1': 'v1', 'k2': 'v2'},
@@ -76,9 +76,9 @@ def test_new_alert_is_created_when_check_transitions_from_red_to_yellow(system):
     alert2, = m.alerts.get_active_alerts()
     assert alert2.id != alert1.id
     assert alert1.severity == 'red'
-    assert alert1.is_active == False
+    assert alert1.is_active() == False
     assert alert2.severity == 'yellow'
-    assert alert2.is_active == True
+    assert alert2.is_active() == True
 
 
 def test_new_alert_is_created_when_check_transitions_from_yellow_to_red(system):
@@ -92,7 +92,7 @@ def test_new_alert_is_created_when_check_transitions_from_yellow_to_red(system):
                     state: yellow
         '''))
     alert1, = m.alerts.get_active_alerts()
-    assert alert1.is_active == True
+    assert alert1.is_active() == True
     m.streams.add_datapoint(
         timestamp_ms=1511346035900,
         label={'k1': 'v1', 'k2': 'v2'},
@@ -104,6 +104,6 @@ def test_new_alert_is_created_when_check_transitions_from_yellow_to_red(system):
     alert2, = m.alerts.get_active_alerts()
     assert alert2.id != alert1.id
     assert alert1.severity == 'yellow'
-    assert alert1.is_active == False
+    assert alert1.is_active() == False
     assert alert2.severity == 'red'
-    assert alert2.is_active == True
+    assert alert2.is_active() == True

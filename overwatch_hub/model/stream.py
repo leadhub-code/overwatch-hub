@@ -112,6 +112,13 @@ class Stream:
             'stream': self,
         })
 
+    def get_current_datapoint(self):
+        dt = self.get_last_date()
+        return dt, {path: _export_item(item, dt) for path, item in self.items.items()}
+
+    def get_last_date(self):
+        return max(self.snapshot_dates)
+
     def get_current_checks(self):
         return {path: stream_item.current_check for path, stream_item in self.items.items() if stream_item.current_check}
 

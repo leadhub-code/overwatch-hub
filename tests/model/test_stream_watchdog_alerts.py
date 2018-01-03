@@ -17,7 +17,7 @@ def test_stream_creates_alert_for_expired_watchdog(system, deterministic_time):
         })
     alert, = m.alerts.get_active_alerts()
     assert alert.alert_type == 'watchdog'
-    assert alert.is_active == True
+    assert alert.is_active() == True
     assert alert.severity == 'red'
     assert alert.stream_label == {'k1': 'v1', 'k2': 'v2'}
     assert alert.path == ('watchdog',)
@@ -54,7 +54,7 @@ def test_watchdog_alert_gets_deactivated_when_watchdog_becomes_ok(system, determ
             },
         })
     alert, = m.alerts.get_active_alerts()
-    assert alert.is_active == True
+    assert alert.is_active() == True
     deterministic_time.advance(seconds=30)
     m.streams.add_datapoint(
         timestamp_ms=deterministic_time.time() * 1000,
@@ -66,5 +66,5 @@ def test_watchdog_alert_gets_deactivated_when_watchdog_becomes_ok(system, determ
                 },
             },
         })
-    assert alert.is_active == False
+    assert alert.is_active() == False
     assert m.alerts.get_active_alerts() == []

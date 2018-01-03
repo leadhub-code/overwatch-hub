@@ -2,12 +2,13 @@ from io import BytesIO
 import logging
 from time import time
 
+from ..util.system import System
+
 from .alert_manager import AlertManager
 from .alerts import Alerts
 from .errors import ModelDeserializeError
 from .custom_checks import CustomChecks
 from .streams import Streams
-from .system import System
 
 
 logger = logging.getLogger(__name__)
@@ -18,7 +19,7 @@ class Model:
     def __init__(self, system=None):
         self.system = system or System()
         self.streams = Streams()
-        self.alerts = Alerts()
+        self.alerts = Alerts(system=self.system)
         self.alert_manager = AlertManager(alerts=self.alerts, system=self.system)
         self.streams.on_stream_updated.subscribe(self.alert_manager.stream_updated)
         #self.custom_checks = CustomChecks()

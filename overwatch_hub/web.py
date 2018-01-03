@@ -44,12 +44,36 @@ class Auth:
         return token
 
 
+class Serialization:
+
+    def __init__(self, model):
+        self.model = model
+
+    def dump_stream(self, stream):
+        open_alerts = self.model.alerts.get_stream_open_alerts(stream_id=stream.id)
+        open_check_alerts = [a for a in open_alerts if a.alert_type == 'check']
+        open_watchdog_alerts = [a for a in open_alerts if a.alert_type == 'watchdog']
+        return {
+            'id': stream.id,
+            'label': stream.label,
+            'last_date': stream.get_last_date(),
+            'check_count': len(stream.get_current_checks()),
+            'watchdog_count': len(stream.get_current_watchdogs()),
+            'check_alert_count': len(open_check_alerts),
+            'watchdog_alert_count': len(open_watchdog_alerts),
+        }
+
+    def dump_snapshot_items(self, snapshot_items):
+        return [{'path': path, **item} for path, item in snapshot_items.items()]
+
+
 class Handlers:
 
     def __init__(self, configuration, model):
         self.configuration = configuration
         self.model = model
         self.auth = Auth(self.configuration)
+        self.serialization = Serialization(model=self.model)
 
     def register(self, router):
         router.add_get('/', self.get_index)
@@ -66,53 +90,42 @@ class Handlers:
         self.auth.check_report_authorization(request)
         body = await request.json()
         #logger.debug('body:\n%s', yaml.dump(body))
-        timestamp_ms = parse_date_to_timestamp_ms(body['date'])
         now_ms = int(time() * 1000)
+        if body.get('date'):
+            timestamp_ms = int(parse_date_to_timestamp_ms(body['date']))
+        else:
+            timestamp_ms = now_ms
         if timestamp_ms > now_ms:
             logger.info('Datapoint timestamp %s > now %s', timestamp_ms, now_ms)
             timestamp_ms = now_ms
         state = body.get('state') or body.get('values')
         if not state or not isinstance(state, dict):
             raise Exception('Invalid state data')
-        self.model.add_datapoint(body['label'], timestamp_ms, state)
+        self.model.streams.add_datapoint(
+            label=body['label'],
+            timestamp_ms=timestamp_ms,
+            snapshot=state)
         return json_response({'ok': True})
 
     async def get_stream_list(self, request):
         self.auth.check_client_authorization(request)
         self.model.check_watchdogs()
         return json_response({
-            'streams': [self._dump_stream(s) for s in self.model.streams.get_all()],
+            'streams': [self.serialization.dump_stream(s) for s in self.model.streams.get_all()],
         })
 
-    def _dump_stream(self, stream):
-        return {
-            'id': stream.id,
-            'label': stream.label,
-            'last_date': max(stream.dates),
-            'check_count': len(stream.get_current_checks()[1]),
-            'watchdog_count': len(stream.get_current_watchdogs()[1]),
-            'check_alert_count': len(stream.get_current_check_alerts()),
-            'watchdog_alert_count': len(stream.get_current_watchdog_alerts()),
-        }
-
-    def _dump_snapshot_items(self, snapshot_items):
-        return [{'path': path, **item} for path, item in snapshot_items.items()]
-
     async def get_stream_detail(self, request):
-        self.auth,check_client_authorization(request)
+        self.auth.check_client_authorization(request)
         stream_id = request.match_info['stream_id']
         self.model.check_watchdogs()
-        if stream_id == 'random':
-            stream = random.choice(self.model.streams.get_all())
-        else:
-            stream = self.model.streams.get_by_id(stream_id)
+        stream = self.model.streams.get_by_id(stream_id)
         current_date, current_items = stream.get_current_datapoint()
         current_alerts = stream.get_current_check_alerts() + stream.get_current_watchdog_alerts()
         reply = {
             'stream': self._dump_stream(stream),
             'current_datapoint': {
                 'date': current_date,
-                'items': self._dump_snapshot_items(current_items),
+                'items': self.serialization.dump_snapshot_items(current_items),
             },
             'current_alerts': current_alerts,
             #'history_items': self._dump_snapshot_items(stream.history_items),
@@ -120,27 +133,17 @@ class Handlers:
         return json_response(reply)
 
     async def get_current_alert_list(self, request):
-        self.auth,check_client_authorization(request)
+        self.auth.check_client_authorization(request)
         self.model.check_watchdogs()
-        alerts = []
-        for stream in self.model.streams.get_all():
-            alerts.extend(stream.get_current_check_alerts())
-            alerts.extend(stream.get_current_watchdog_alerts())
-        for ch in self.model.custom_checks.get_all():
-            alerts.extend(ch.get_current_alerts())
-        assert all(not a['end_date'] for a in alerts)
+        alerts = self.model.alerts.get_open_alerts()
+        assert all(not a.end_date for a in alerts)
         alerts.sort(key=lambda a: a['start_date'], reverse=True)
         return json_response({'alerts': alerts[:1000]})
 
     async def get_closed_alert_list(self, request):
-        self.auth,check_client_authorization(request)
+        self.auth.check_client_authorization(request)
         self.model.check_watchdogs()
-        alerts = []
-        for stream in self.model.streams.get_all():
-            alerts.extend(stream.get_all_check_alerts())
-            alerts.extend(stream.get_all_watchdog_alerts())
-        for ch in self.model.custom_checks.get_all():
-            alerts.extend(ch.get_current_alerts())
+        alerts = self.model.alerts.get_closed_alerts()
         alerts = [a for a in alerts if a['end_date']]
         alerts.sort(key=lambda a: a['start_date'], reverse=True)
         return json_response({'alerts': alerts[:1000]})
