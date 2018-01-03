@@ -1,10 +1,20 @@
 #!/usr/bin/env python3
 
+from pathlib import Path
+import re
 from setuptools import setup, find_packages
+
+
+here = Path(__file__).parent
+
+with (here / 'overwatch_hub/__init__.py').open() as f:
+    # parse version number
+    version = re.search(r'''__version__ = ['"]([0-9.]+)['"]''', f.read()).group(1)
+
 
 setup(
     name='overwatch-hub',
-    version='0.0.1',
+    version=version,
     author='Petr Messner',
     author_email='petr.messner@gmail.com',
     license='MIT',

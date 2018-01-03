@@ -1,4 +1,4 @@
-from aiohttp.web import json_response as _json_response
+from aiohttp.web import json_response as aiohttp_json_response
 from aiohttp.web import HTTPForbidden
 import logging
 import random
@@ -12,11 +12,44 @@ from .util.datetime import parse_date_to_timestamp_ms
 logger = logging.getLogger(__name__)
 
 
+def json_response(reply):
+    return aiohttp_json_response(reply, dumps=json.dumps)
+
+
+class Auth:
+
+    def __init__(self, configuration):
+        self.configuration = configuration
+
+    def check_report_authorization(self, request):
+        token = self._get_authorization_token(request)
+        if token not in self.configuration.report_tokens:
+            logger.info('Invalid Authorization token: %s...', repr(token[:5]))
+            raise HTTPForbidden(reason='Invalid Authorization token')
+
+    def check_client_authorization(self, request):
+        token = self._get_authorization_token(request)
+        if token not in self.configuration.client_tokens:
+            logger.info('Invalid Authorization token: %s...', repr(token[:5]))
+            raise HTTPForbidden(reason='Invalid Authorization token')
+
+    def _get_authorization_token(self, request):
+        auth_value = request.headers.get('Authorization')
+        if not auth_value:
+             raise HTTPForbidden(reason='Missing Authorization header')
+        parts = auth_value.split()
+        if len(parts) != 2:
+            raise HTTPForbidden(reason='Unsupported Authorization header value format')
+        _, token = parts
+        return token
+
+
 class Handlers:
 
     def __init__(self, configuration, model):
         self.configuration = configuration
         self.model = model
+        self.auth = Auth(self.configuration)
 
     def register(self, router):
         router.add_get('/', self.get_index)
@@ -29,30 +62,8 @@ class Handlers:
     async def get_index(self, request):
         return json_response({'info': 'Overwatch Hub'})
 
-    def _get_authorization_token(self, request):
-        auth_value = request.headers.get('Authorization')
-        if not auth_value:
-             raise HTTPForbidden(reason='Missing Authorization header')
-        parts = auth_value.split()
-        if len(parts) != 2:
-            raise HTTPForbidden(reason='Unsupported Authorization header value format')
-        _, token = parts
-        return token
-
-    def _check_report_authorization(self, request):
-        token = self._get_authorization_token(request)
-        if token not in self.configuration.report_tokens:
-            logger.info('Invalid Authorization token: %s...', repr(token[:5]))
-            raise HTTPForbidden(reason='Invalid Authorization token')
-
-    def _check_client_authorization(self, request):
-        token = self._get_authorization_token(request)
-        if token not in self.configuration.client_tokens:
-            logger.info('Invalid Authorization token: %s...', repr(token[:5]))
-            raise HTTPForbidden(reason='Invalid Authorization token')
-
     async def post_report(self, request):
-        self._check_report_authorization(request)
+        self.auth.check_report_authorization(request)
         body = await request.json()
         #logger.debug('body:\n%s', yaml.dump(body))
         timestamp_ms = parse_date_to_timestamp_ms(body['date'])
@@ -67,7 +78,7 @@ class Handlers:
         return json_response({'ok': True})
 
     async def get_stream_list(self, request):
-        self._check_client_authorization(request)
+        self.auth.check_client_authorization(request)
         self.model.check_watchdogs()
         return json_response({
             'streams': [self._dump_stream(s) for s in self.model.streams.get_all()],
@@ -88,7 +99,7 @@ class Handlers:
         return [{'path': path, **item} for path, item in snapshot_items.items()]
 
     async def get_stream_detail(self, request):
-        self._check_client_authorization(request)
+        self.auth,check_client_authorization(request)
         stream_id = request.match_info['stream_id']
         self.model.check_watchdogs()
         if stream_id == 'random':
@@ -109,7 +120,7 @@ class Handlers:
         return json_response(reply)
 
     async def get_current_alert_list(self, request):
-        self._check_client_authorization(request)
+        self.auth,check_client_authorization(request)
         self.model.check_watchdogs()
         alerts = []
         for stream in self.model.streams.get_all():
@@ -122,7 +133,7 @@ class Handlers:
         return json_response({'alerts': alerts[:1000]})
 
     async def get_closed_alert_list(self, request):
-        self._check_client_authorization(request)
+        self.auth,check_client_authorization(request)
         self.model.check_watchdogs()
         alerts = []
         for stream in self.model.streams.get_all():
@@ -133,7 +144,3 @@ class Handlers:
         alerts = [a for a in alerts if a['end_date']]
         alerts.sort(key=lambda a: a['start_date'], reverse=True)
         return json_response({'alerts': alerts[:1000]})
-
-
-def json_response(reply):
-    return _json_response(reply, dumps=json.dumps)
