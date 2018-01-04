@@ -19,7 +19,7 @@ class Streams:
 
     def serialize(self, write):
         write(b'Streams\n')
-        for stream in self._by_id.values():
+        for stream_id, stream in sorted(self._by_id.items()):
             write(b'-stream\n')
             stream.serialize(write)
         write(b'/Streams\n')

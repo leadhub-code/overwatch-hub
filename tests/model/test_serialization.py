@@ -17,8 +17,8 @@ def _it(lst):
     return lambda: next(iterator)
 
 
-def test_serialize_and_revive_empty_model():
-    m = Model()
+def test_serialize_and_revive_empty_model(system):
+    m = Model(system=system)
     data = m.serialize()
     expected = dedent('''\
         Model
@@ -39,8 +39,8 @@ def test_serialize_and_revive_empty_model():
     assert Model.revive(io.BytesIO(data).readline)
 
 
-def test_serialize_and_revive_model_with_datapoint():
-    m = Model()
+def test_serialize_and_revive_model_with_datapoint(system):
+    m = Model(system=system)
     m.streams.add_datapoint(
         timestamp_ms=1511346030123,
         label={'k1': 'v1', 'k2': 'v2'},
@@ -49,7 +49,7 @@ def test_serialize_and_revive_model_with_datapoint():
            response:
                __value: 200
                __check:
-                   state: green
+                   state: red
            watchdog:
                __watchdog:
                    deadline: 1511346090000
@@ -70,7 +70,7 @@ def test_serialize_and_revive_model_with_datapoint():
         -item
         {"path":["response"]}
         StreamItem
-        {"check_history":[[1511346030123,{"state":"green"}]],"current_check":{"state":"green"},"current_value":200,"current_watchdog":null,"value_history":[[1511346030123,200]],"watchdog_history":[]}
+        {"check_history":[[1511346030123,{"state":"red"}]],"current_check":{"state":"red"},"current_value":200,"current_watchdog":null,"value_history":[[1511346030123,200]],"watchdog_history":[]}
         /StreamItem
         -item
         {"path":["watchdog"]}
@@ -81,8 +81,16 @@ def test_serialize_and_revive_model_with_datapoint():
         /Streams
         -alerts
         Alerts
+        -alert
+        Alert
+        {"alert_type":"check","closed_time_ms":null,"deactivated_time_ms":null,"id":"AGrvE5xwIm8Z_oyX","path":["response"],"severity":"red","stream_id":"S9CH0K8lHUiARv56","stream_label":{"k1":"v1","k2":"v2"}}
+        /Alert
+        -alert
+        Alert
+        {"alert_type":"watchdog","closed_time_ms":null,"deactivated_time_ms":null,"id":"AV0z1JJbF6ZqbSCU","path":["watchdog"],"severity":"red","stream_id":"S9CH0K8lHUiARv56","stream_label":{"k1":"v1","k2":"v2"}}
+        /Alert
         /Alerts
         /Model
-    ''').encode()
-    assert data == expected
+    ''')
+    assert data.decode() == expected
     assert Model.revive(data).serialize() == data
