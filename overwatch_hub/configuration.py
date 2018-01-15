@@ -1,4 +1,5 @@
 import logging
+import os
 from pathlib import Path
 import yaml
 
@@ -31,10 +32,20 @@ class _HTTPInterface:
         self.bind_host = 'localhost'
         self.bind_port = 8090
         if data:
-            if data.get('bind_host'):
+            if 'bind_host' in data:
                 self.bind_host = data['bind_host']
             if data.get('bind_port'):
                 self.bind_port = int(data['bind_port'])
+
+    def get_bind_host(self):
+        if 'OVERWATCH_HUB_BIND_HOST' in os.environ:
+            return os.environ['OVERWATCH_HUB_BIND_HOST']
+        return self.bind_host
+
+    def get_bind_port(self):
+        if 'OVERWATCH_HUB_BIND_PORT' in os.environ:
+            return int(os.environ['OVERWATCH_HUB_BIND_PORT'])
+        return self.bind_port
 
 
 class _Log:

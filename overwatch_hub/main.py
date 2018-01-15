@@ -74,8 +74,8 @@ async def _main(loop, conf):
     app = aiohttp.web.Application()
     handlers.register(app.router)
     app_handler = app.make_handler()
-    bind_host = conf.http_interface.bind_host
-    bind_port = conf.http_interface.bind_port
+    bind_host = conf.http_interface.get_bind_host()
+    bind_port = conf.http_interface.get_bind_port()
     server = await loop.create_server(app_handler, bind_host, bind_port)
     logger.debug('server: %r', server)
     logger.info('Serving on %s', server.sockets[0].getsockname())
