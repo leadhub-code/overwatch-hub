@@ -10,7 +10,6 @@ logger = logging.getLogger(__name__)
 
 
 class Alert:
-
     '''
     Attribute is_active means that the watchdog/check is still triggered.
 

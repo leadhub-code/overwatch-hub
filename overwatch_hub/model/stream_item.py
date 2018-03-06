@@ -58,8 +58,29 @@ class StreamItem:
             self.current_check = check
             self.current_watchdog = watchdog
         if value is not None:
+            assert json.loads(json.dumps(value)) == value
             self.value_history[timestamp_ms] = value
         if check:
+            assert json.loads(json.dumps(check)) == check
             self.check_history[timestamp_ms] = check
         if watchdog:
+            assert json.loads(json.dumps(watchdog)) == watchdog
             self.watchdog_history[timestamp_ms] = watchdog
+
+    def get_snapshot(self, timestamp_ms):
+        snapshot = {
+            'value': self.value_history.get(timestamp_ms),
+        }
+        if timestamp_ms in self.check_history:
+            snapshot['check'] = self.check_history[timestamp_ms]
+        if timestamp_ms in self.watchdog_history:
+            snapshot['watchdog'] = self.watchdog_history[timestamp_ms]
+        if snapshot == {'value': None}:
+            return None
+        return snapshot
+
+    def get_check(self, timestamp_ms):
+        return self.check_history.get(timestamp_ms)
+
+    def get_watchdog(self, timestamp_ms):
+        return self.watchdog_history.get(timestamp_ms)

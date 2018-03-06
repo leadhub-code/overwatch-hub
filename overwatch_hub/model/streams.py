@@ -11,9 +11,12 @@ logger = logging.getLogger(__name__)
 
 
 class Streams:
+    '''
+    Collection of Stream objects
+    '''
 
     def __init__(self):
-        self._by_label = {} # serialized label -> Series
+        self._by_label = {} # {serialized label: Stream}
         self._by_id = {}
         self.on_stream_updated = ObservableEvent()
 
@@ -54,6 +57,9 @@ class Streams:
         return self._by_label[sl]
 
     def get_all(self):
+        '''
+        Return all streams
+        '''
         return list(self._by_id.values())
 
     def get_by_id(self, stream_id):

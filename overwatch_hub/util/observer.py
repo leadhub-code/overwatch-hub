@@ -8,6 +8,11 @@ logger = logging.getLogger(__name__)
 class ObservableEvent:
     '''
     Known as Publish-subscribe or Observer pattern.
+
+    Unsubscribe is not implemented, it is designed to be present in top-level
+    structures only and not in dynamically created, short-lived objects.
+    Is it so because proper unsubscribe and reference-cycle-breaking is pretty
+    problematic aspect of this publish-subscribe pattern.
     '''
 
     def __init__(self):

@@ -16,8 +16,17 @@ logger = logging.getLogger(__name__)
 
 
 class Stream:
+    '''
+    Stream represents all datapoints under the same unique label.
+
+    Stream is identified by id and also by label.
+    Stream contains "items", each item (StreamItem) is a "histogram" of one specific key-value.
+    '''
 
     def __init__(self, label, on_stream_updated):
+        '''
+        :param on_stream_updated: ObservableEvent, will be fired: :code:`{ stream: self }`
+        '''
         self.id = generate_stream_id(label)
         self.label = label
         self.snapshot_dates = []
@@ -43,9 +52,9 @@ class Stream:
         write(b'/Stream\n')
 
     @classmethod
-    def revive(cls, read, on_stream_updated):
+    def revive(cls, readline, on_stream_updated):
         stream = cls(label={}, on_stream_updated=on_stream_updated)
-        stream.deserialize(read)
+        stream.deserialize(readline)
         return stream
 
     def deserialize(self, readline):
@@ -93,6 +102,8 @@ class Stream:
         '''
         assert isinstance(timestamp_ms, int)
         snapshot_items = flatten_snapshot(snapshot)
+        # snapshot_items has now this structure (thanks to flatten_snapshot):
+        # {path: { value: ..., check: ..., watchdog: ... }}
         self.snapshot_dates.append(timestamp_ms)
         for path, item_data in snapshot_items.items():
             stream_item = self._get_stream_item(path)
@@ -112,15 +123,26 @@ class Stream:
             'stream': self,
         })
 
-    def get_current_datapoint(self):
-        dt = self.get_last_date()
-        return dt, {path: _export_item(item, dt) for path, item in self.items.items()}
-
     def get_last_date(self):
         return max(self.snapshot_dates)
 
+    def get_current_datapoint(self):
+        dt = self.get_last_date()
+        snapshot = {path: item.get_snapshot(dt) for path, item in self.items.items()}
+        snapshot = {k: v for k, v in snapshot.items() if v is not None}
+        return dt, snapshot
+
     def get_current_checks(self):
-        return {path: stream_item.current_check for path, stream_item in self.items.items() if stream_item.current_check}
+        dt = self.get_last_date()
+        checks = {path: item.get_check(dt) for path, item in self.items.items()}
+        checks = {k: v for k, v in checks.items() if v is not None}
+        return checks
 
     def get_current_watchdogs(self):
-        return {path: stream_item.current_watchdog for path, stream_item in self.items.items() if stream_item.current_watchdog}
+        dt = self.get_last_date()
+        watchdogs = {path: item.get_watchdog(dt) for path, item in self.items.items()}
+        watchdogs = {k: v for k, v in watchdogs.items() if v is not None}
+        return watchdogs
+
+    def get_current_check_alerts(self):
+        raise NotImplementedError('Use alerts collection')

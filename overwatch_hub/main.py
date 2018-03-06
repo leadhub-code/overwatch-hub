@@ -34,7 +34,7 @@ def hub_main():
         raise e
 
 
-log_format = '%(asctime)s %(name)-30s %(levelname)5s: %(message)s'
+log_format = '%(asctime)s %(name)-33s %(levelname)5s: %(message)s'
 
 
 def setup_logging(verbosity):

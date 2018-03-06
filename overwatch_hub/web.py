@@ -12,8 +12,8 @@ from .util.datetime import parse_date_to_timestamp_ms
 logger = logging.getLogger(__name__)
 
 
-def json_response(reply):
-    return aiohttp_json_response(reply, dumps=json.dumps)
+def json_response(reply, status=200):
+    return aiohttp_json_response(reply, dumps=json.dumps, status=status)
 
 
 class Auth:
@@ -118,16 +118,20 @@ class Handlers:
         self.auth.check_client_authorization(request)
         stream_id = request.match_info['stream_id']
         self.model.check_watchdogs()
-        stream = self.model.streams.get_by_id(stream_id)
+        try:
+            stream = self.model.streams.get_by_id(stream_id)
+        except KeyError as e:
+            logger.info('Got %r for streams.get_by_id(%r), returning 404', e, stream_id)
+            return json_response({'error': {'code': 'stream_not_found'}}, status=404)
         current_date, current_items = stream.get_current_datapoint()
-        current_alerts = stream.get_current_check_alerts() + stream.get_current_watchdog_alerts()
+        #current_alerts = stream.get_current_check_alerts() + stream.get_current_watchdog_alerts()
         reply = {
-            'stream': self._dump_stream(stream),
+            'stream': self.serialization.dump_stream(stream),
             'current_datapoint': {
                 'date': current_date,
                 'items': self.serialization.dump_snapshot_items(current_items),
             },
-            'current_alerts': current_alerts,
+            #'current_alerts': current_alerts,
             #'history_items': self._dump_snapshot_items(stream.history_items),
         }
         return json_response(reply)
